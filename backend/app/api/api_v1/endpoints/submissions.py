@@ -24,27 +24,35 @@ def read_submissions(
     skip: int = 0,
     limit: int = 100,
     problem_id: Optional[int] = None,
+    all_users: bool = False,
+    sort_order: str = "desc",
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieve submissions.
-    If admin, return all (filtered by problem_id if provided).
-    If user, return own (filtered by problem_id if provided).
+    If all_users is True, return all submissions from all users (including admins).
+    Otherwise, return only the currentgg user's submissions.
     """
     query = db.query(models.Submission)
 
-    if not current_user.is_admin:
+    if all_users:
+        # Return all submissions from all users
+        if not current_user.is_admin:
+            # Ordinary users cannot see admin submissions
+            query = query.join(models.User).filter(models.User.is_admin == False)
+    else:
+        # Return only own submissions
         query = query.filter(models.Submission.user_id == current_user.id)
 
     if problem_id:
         query = query.filter(models.Submission.problem_id == problem_id)
 
-    submissions = (
-        query.order_by(models.Submission.submitted_at.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    if sort_order == "asc":
+        query = query.order_by(models.Submission.submitted_at.asc())
+    else:
+        query = query.order_by(models.Submission.submitted_at.desc())
+
+    submissions = query.offset(skip).limit(limit).all()
     return submissions
 
 

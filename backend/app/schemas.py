@@ -62,6 +62,7 @@ class ProblemOut(ProblemBase):
 class SubmissionOut(BaseModel):
     id: int
     user_id: int
+    user: UserBase
     problem_id: int
     status: str
     score: Optional[float] = None
