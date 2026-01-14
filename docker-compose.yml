@@ -1,0 +1,93 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: leaderboard
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - app_network
+
+  # 后端 API 服务
+  backend-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: leaderboard_backend_api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+      - ./data/uploads:/app/data/uploads
+      - ./data/logs:/app/data/logs
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db/leaderboard
+      - REDIS_URL=redis://redis:6379/0
+      - UPLOAD_DIR=/app/data/uploads
+      - LOG_DIR=/app/data/logs
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app_network
+
+    # 后端 Worker 服务 (单独的容器，专门跑测试，挂载 Docker Socket)
+  backend-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: leaderboard_backend_worker
+    command: python -m app.worker
+    volumes:
+      - ./backend:/app
+      - ./data/uploads:/app/data/uploads
+      - ./data/logs:/app/data/logs
+      - /var/run/docker.sock:/var/run/docker.sock # 关键：允许控制宿主机 Docker
+    environment:
+      - DATABASE_URL=postgresql://user:password@db/leaderboard
+      - REDIS_URL=redis://redis:6379/0
+      - UPLOAD_DIR=/app/data/uploads
+      - LOG_DIR=/app/data/logs
+      # 必须知道宿主机路径才能正确挂载 volume 到新的测试容器中
+      - HOST_UPLOAD_DIR=/home/yyx/workspaces/leaderboard/data/uploads
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: leaderboard_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - backend-api
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
