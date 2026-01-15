@@ -44,6 +44,8 @@ class ProblemBase(BaseModel):
     description: Optional[str] = None
     docker_image: str
     test_command: Optional[str] = None
+    test_script_path: Optional[str] = None
+    submission_map_path: Optional[str] = None
 
 
 class ProblemCreate(ProblemBase):

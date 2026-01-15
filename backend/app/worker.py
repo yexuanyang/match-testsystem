@@ -62,15 +62,37 @@ def process_submission(db: Session, submission_id: int):
         os.makedirs(settings.LOG_DIR, exist_ok=True)
 
         print(f"Running container for image: {problem.docker_image}")
-        print(f"Mounting {host_answer_path} to /input/submission.zip")
+
+        # Determine submission map path
+        submission_map_target = (
+            problem.submission_map_path
+            if problem.submission_map_path
+            else "/input/submission.zip"
+        )
+        print(f"Mounting {host_answer_path} to {submission_map_target}")
+
+        volumes = {host_answer_path: {"bind": submission_map_target, "mode": "ro"}}
+
+        run_command = problem.test_command
+
+        # Check for test script
+        if problem.test_script_path and os.path.exists(problem.test_script_path):
+            try:
+                host_script_path = get_host_path(problem.test_script_path)
+                print(f"Mounting script {host_script_path} to /test_script.sh")
+                volumes[host_script_path] = {"bind": "/test_script.sh", "mode": "ro"}
+                run_command = "sh /test_script.sh"
+            except Exception as e:
+                print(f"Error resolving script path: {e}")
+                # Fallback to command or fail? Let's proceed with command if script fails,
+                # but likely we should just let it fail or log it.
+                pass
 
         # Run Container
-        # We mount the answer file to /input/submission.zip
-        # The test script inside the container should know to unzip /input/submission.zip and test it
         container = docker_client.containers.run(
             image=problem.docker_image,
-            command=problem.test_command,  # e.g. "python test.py /input/submission.zip"
-            volumes={host_answer_path: {"bind": "/input/submission.zip", "mode": "ro"}},
+            command=run_command,
+            volumes=volumes,
             detach=True,
             mem_limit="512m",  # Limit memory
             cpu_quota=50000,  # Limit CPU (0.5 CPU)

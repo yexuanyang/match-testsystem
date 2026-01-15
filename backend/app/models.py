@@ -1,16 +1,16 @@
+from app.core.database import Base
 from sqlalchemy import (
     Boolean,
     Column,
+    DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
-    DateTime,
-    Float,
     Text,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.core.database import Base
 
 
 class User(Base):
@@ -36,6 +36,10 @@ class Problem(Base):
     description_path = Column(String, nullable=True)  # 存储 Markdown 文件路径
     docker_image = Column(String, nullable=False)  # 评测用的镜像名
     test_command = Column(String, nullable=True)  # 容器内执行的测试命令
+    test_script_path = Column(String, nullable=True)  # 存储测试脚本路径
+    submission_map_path = Column(
+        String, nullable=True
+    )  # 答案映射路径，默认为 /input/submission.zip
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     submissions = relationship("Submission", back_populates="problem")
@@ -60,12 +64,14 @@ class Submission(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     problem_id = Column(Integer, ForeignKey("problems.id"))
 
-    status = Column(String, default="Pending") # Pending, Queued, Running, Success, Failed, Error
+    status = Column(
+        String, default="Pending"
+    )  # Pending, Queued, Running, Success, Failed, Error
     score = Column(Float, nullable=True)
 
     answer_path = Column(String, nullable=True)
     report_path = Column(String, nullable=True)
-    log_path = Column(String, nullable=True) # 存储日志文件的相对路径
+    log_path = Column(String, nullable=True)  # 存储日志文件的相对路径
 
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
     finished_at = Column(DateTime(timezone=True), nullable=True)

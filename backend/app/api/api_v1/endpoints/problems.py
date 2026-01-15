@@ -1,9 +1,12 @@
-from typing import Any, List
+import os
+import shutil
+from typing import Any, List, Optional
 
 from app import models, schemas
 from app.api import deps
+from app.core.config import settings
 from app.core.database import get_db
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 router = APIRouter()
@@ -47,21 +50,42 @@ def read_problem(
 def create_problem(
     *,
     db: Session = Depends(get_db),
-    problem_in: schemas.ProblemCreate,
+    title: str = Form(...),
+    description: Optional[str] = Form(None),
+    docker_image: str = Form(...),
+    test_command: Optional[str] = Form(None),
+    submission_map_path: Optional[str] = Form(None),
+    test_script_file: Optional[UploadFile] = File(None),
     current_user: models.User = Depends(deps.get_current_admin_user),
 ) -> Any:
     """
     Create new problem. Only Admin.
     """
     problem = models.Problem(
-        title=problem_in.title,
-        description=problem_in.description,
-        docker_image=problem_in.docker_image,
-        test_command=problem_in.test_command,
+        title=title,
+        description=description,
+        docker_image=docker_image,
+        test_command=test_command,
+        submission_map_path=submission_map_path,
     )
     db.add(problem)
     db.commit()
     db.refresh(problem)
+
+    if test_script_file:
+        scripts_dir = os.path.join(settings.UPLOAD_DIR, "scripts")
+        os.makedirs(scripts_dir, exist_ok=True)
+        # Use problem ID in filename
+        script_filename = f"{problem.id}_{test_script_file.filename}"
+        script_path = os.path.join(scripts_dir, script_filename)
+
+        with open(script_path, "wb") as buffer:
+            shutil.copyfileobj(test_script_file.file, buffer)
+
+        problem.test_script_path = script_path
+        db.commit()
+        db.refresh(problem)
+
     return problem
 
 
@@ -70,7 +94,13 @@ def update_problem(
     *,
     db: Session = Depends(get_db),
     problem_id: int,
-    problem_in: schemas.ProblemCreate,
+    title: str = Form(...),
+    description: Optional[str] = Form(None),
+    docker_image: str = Form(...),
+    test_command: Optional[str] = Form(None),
+    submission_map_path: Optional[str] = Form(None),
+    test_script_file: Optional[UploadFile] = File(None),
+    clear_script: bool = Form(False),
     current_user: models.User = Depends(deps.get_current_admin_user),
 ) -> Any:
     """
@@ -80,10 +110,25 @@ def update_problem(
     if not problem:
         raise HTTPException(status_code=404, detail="Problem not found")
 
-    problem.title = problem_in.title
-    problem.description = problem_in.description
-    problem.docker_image = problem_in.docker_image
-    problem.test_command = problem_in.test_command
+    problem.title = title
+    problem.description = description
+    problem.docker_image = docker_image
+    problem.test_command = test_command
+    problem.submission_map_path = submission_map_path
+
+    if clear_script:
+        problem.test_script_path = None
+
+    if test_script_file:
+        scripts_dir = os.path.join(settings.UPLOAD_DIR, "scripts")
+        os.makedirs(scripts_dir, exist_ok=True)
+        script_filename = f"{problem.id}_{test_script_file.filename}"
+        script_path = os.path.join(scripts_dir, script_filename)
+
+        with open(script_path, "wb") as buffer:
+            shutil.copyfileobj(test_script_file.file, buffer)
+
+        problem.test_script_path = script_path
 
     db.commit()
     db.refresh(problem)
