@@ -24,6 +24,7 @@ def read_submissions(
     skip: int = 0,
     limit: int = 100,
     problem_id: Optional[int] = None,
+    submission_id: Optional[int] = None,
     all_users: bool = False,
     sort_order: str = "desc",
     current_user: models.User = Depends(deps.get_current_active_user),
@@ -31,7 +32,7 @@ def read_submissions(
     """
     Retrieve submissions.
     If all_users is True, return all submissions from all users (including admins).
-    Otherwise, return only the currentgg user's submissions.
+    Otherwise, return only the current user's submissions.
     """
     query = db.query(models.Submission)
 
@@ -46,6 +47,9 @@ def read_submissions(
 
     if problem_id:
         query = query.filter(models.Submission.problem_id == problem_id)
+
+    if submission_id:
+        query = query.filter(models.Submission.id == submission_id)
 
     if sort_order == "asc":
         query = query.order_by(models.Submission.submitted_at.asc())
