@@ -1,18 +1,34 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Table, Tag, Button, Modal, Switch, Select, Space, Row, Col } from 'antd';
-import api from '../services/api';
+import React, { useState, useEffect, useCallback, useContext } from "react";
+import {
+  Table,
+  Tag,
+  Button,
+  Modal,
+  Switch,
+  Select,
+  Space,
+  Popconfirm,
+  message,
+} from "antd";
+import api from "../services/api";
+import { AuthContext } from "../context/AuthContext";
 
 const { Option } = Select;
 
-const SubmissionHistory = ({ problemId = null, limit = 100, showPagination = true }) => {
+const SubmissionHistory = ({
+  problemId = null,
+  limit = 100,
+  showPagination = true,
+}) => {
+  const { user } = useContext(AuthContext);
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [logModalOpen, setLogModalOpen] = useState(false);
-  const [currentLog, setCurrentLog] = useState('');
+  const [currentLog, setCurrentLog] = useState("");
 
   // Filters
   const [viewAll, setViewAll] = useState(false);
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [sortOrder, setSortOrder] = useState("desc");
   const [filterProblemId, setFilterProblemId] = useState(problemId);
   const [problems, setProblems] = useState([]);
 
@@ -21,7 +37,7 @@ const SubmissionHistory = ({ problemId = null, limit = 100, showPagination = tru
     if (!problemId) {
       const fetchProblems = async () => {
         try {
-          const res = await api.get('/problems');
+          const res = await api.get("/problems");
           setProblems(res.data);
         } catch (error) {
           console.error("Failed to fetch problems", error);
@@ -35,14 +51,14 @@ const SubmissionHistory = ({ problemId = null, limit = 100, showPagination = tru
 
   const fetchSubmissions = useCallback(async () => {
     try {
-      const params = { 
+      const params = {
         limit,
         all_users: viewAll,
-        sort_order: sortOrder
+        sort_order: sortOrder,
       };
       if (filterProblemId) params.problem_id = filterProblemId;
 
-      const res = await api.get('/submissions/', { params });
+      const res = await api.get("/submissions/", { params });
       setSubmissions(res.data);
     } catch (error) {
       console.error(error);
@@ -63,90 +79,123 @@ const SubmissionHistory = ({ problemId = null, limit = 100, showPagination = tru
       setCurrentLog(res.data.log);
       setLogModalOpen(true);
     } catch (error) {
-        setCurrentLog("Log unavailable.");
-        setLogModalOpen(true);
+      setCurrentLog("Log unavailable.");
+      setLogModalOpen(true);
+    }
+  };
+
+  const cancelSubmission = async (id) => {
+    try {
+      await api.post(`/submissions/${id}/cancel`);
+      message.success("Submission cancelled");
+      fetchSubmissions();
+    } catch (error) {
+      const detail =
+        error.response?.data?.detail || "Failed to cancel submission";
+      message.error(detail);
     }
   };
 
   const columns = [
     {
-      title: 'Time',
-      dataIndex: 'submitted_at',
-      key: 'submitted_at',
+      title: "Time",
+      dataIndex: "submitted_at",
+      key: "submitted_at",
       render: (text) => new Date(text).toLocaleString(),
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
       render: (status) => {
-        let color = 'default';
-        if (status === 'Success') color = 'green';
-        if (status === 'Failed') color = 'red';
-        if (status === 'Running') color = 'blue';
-        if (status === 'Pending') color = 'orange';
-        if (status === 'Cancelled') color = 'grey';
+        let color = "default";
+        if (status === "Success") color = "green";
+        if (status === "Failed") color = "red";
+        if (status === "Running") color = "blue";
+        if (status === "Pending") color = "orange";
+        if (status === "Cancelled") color = "grey";
         return <Tag color={color}>{status.toUpperCase()}</Tag>;
       },
     },
     {
-      title: 'Score',
-      dataIndex: 'score',
-      key: 'score',
-      render: (score) => score !== null ? score : '-',
+      title: "Score",
+      dataIndex: "score",
+      key: "score",
+      render: (score) => (score !== null ? score : "-"),
     },
     {
-      title: 'Action',
-      key: 'action',
-      render: (_, record) => (
-        <Button size="small" onClick={() => showLog(record.id)}>
-          View Log
-        </Button>
-      ),
+      title: "Action",
+      key: "action",
+      render: (_, record) => {
+        const canCancel =
+          record.status === "Pending" &&
+          (user?.id === record.user_id || user?.is_admin);
+
+        return (
+          <Space size="small">
+            <Button size="small" onClick={() => showLog(record.id)}>
+              View Log
+            </Button>
+            {canCancel && (
+              <Popconfirm
+                title="Cancel this submission?"
+                description="This action cannot be undone."
+                onConfirm={() => cancelSubmission(record.id)}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Button size="small" danger>
+                  Cancel
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
   // Dynamically add columns based on view/context
   if (viewAll) {
-      columns.unshift({
-          title: 'User',
-          dataIndex: ['user', 'username'],
-          key: 'user',
-      });
+    columns.unshift({
+      title: "User",
+      dataIndex: ["user", "username"],
+      key: "user",
+    });
   }
 
   if (!problemId) {
-      // Find where to insert Problem column. 
-      // If User column exists (index 0), Problem goes at 1? 
-      // Standard: User, Problem, Time, Status...
-      // If no User: Problem, Time, Status...
-      const insertIndex = viewAll ? 1 : 0;
-      columns.splice(insertIndex, 0, {
-          title: 'Problem',
-          dataIndex: 'problem_id',
-          key: 'problem_id',
-          render: (pid) => {
-              const p = problems.find(p => p.id === pid);
-              return p ? p.title : pid;
-          }
-      });
+    // Find where to insert Problem column.
+    // If User column exists (index 0), Problem goes at 1?
+    // Standard: User, Problem, Time, Status...
+    // If no User: Problem, Time, Status...
+    const insertIndex = viewAll ? 1 : 0;
+    columns.splice(insertIndex, 0, {
+      title: "Problem",
+      dataIndex: "problem_id",
+      key: "problem_id",
+      render: (pid) => {
+        const p = problems.find((p) => p.id === pid);
+        return p ? p.title : pid;
+      },
+    });
   }
 
   return (
     <>
       <div style={{ marginBottom: 16 }}>
         <Space wrap>
-          <Switch 
-            checkedChildren="All Users" 
-            unCheckedChildren="My Submissions" 
-            checked={viewAll} 
-            onChange={setViewAll} 
+          <Switch
+            checkedChildren="All Users"
+            unCheckedChildren="My Submissions"
+            checked={viewAll}
+            onChange={setViewAll}
           />
-          
-          <Select 
-            defaultValue="desc" 
-            style={{ width: 120 }} 
-            onChange={setSortOrder} 
+
+          <Select
+            defaultValue="desc"
+            style={{ width: 120 }}
+            onChange={setSortOrder}
             value={sortOrder}
           >
             <Option value="desc">Newest First</Option>
@@ -161,8 +210,10 @@ const SubmissionHistory = ({ problemId = null, limit = 100, showPagination = tru
               onChange={setFilterProblemId}
               value={filterProblemId}
             >
-              {problems.map(p => (
-                <Option key={p.id} value={p.id}>{p.title}</Option>
+              {problems.map((p) => (
+                <Option key={p.id} value={p.id}>
+                  {p.title}
+                </Option>
               ))}
             </Select>
           )}
@@ -176,7 +227,7 @@ const SubmissionHistory = ({ problemId = null, limit = 100, showPagination = tru
         loading={loading}
         pagination={showPagination ? { pageSize: 10 } : false}
       />
-      
+
       <Modal
         title="Execution Log"
         open={logModalOpen}
@@ -184,12 +235,19 @@ const SubmissionHistory = ({ problemId = null, limit = 100, showPagination = tru
         onCancel={() => setLogModalOpen(false)}
         width={800}
         footer={[
-            <Button key="close" onClick={() => setLogModalOpen(false)}>
-                Close
-            </Button>
+          <Button key="close" onClick={() => setLogModalOpen(false)}>
+            Close
+          </Button>,
         ]}
       >
-        <pre style={{ maxHeight: '400px', overflow: 'auto', backgroundColor: '#f5f5f5', padding: '10px' }}>
+        <pre
+          style={{
+            maxHeight: "400px",
+            overflow: "auto",
+            backgroundColor: "#f5f5f5",
+            padding: "10px",
+          }}
+        >
           {currentLog}
         </pre>
       </Modal>

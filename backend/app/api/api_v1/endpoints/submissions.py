@@ -172,10 +172,12 @@ def delete_submission(
 def cancel_submission(
     submission_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(deps.get_current_admin_user),
+    current_user: models.User = Depends(deps.get_current_active_user),
 ):
     """
-    Cancel a running submission by killing the docker container. Only Admin.
+    Cancel a pending or running submission.
+    - Users can cancel their own Pending submissions.
+    - Admins can cancel any Pending or Running submission.
     """
     submission = (
         db.query(models.Submission)
@@ -185,23 +187,47 @@ def cancel_submission(
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
 
-    if submission.status != "Running":
-        raise HTTPException(status_code=400, detail="Submission is not running")
+    # Permission check: users can only cancel their own submissions
+    if not current_user.is_admin and submission.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not enough privileges")
 
-    # Try to find container with label
-    try:
-        client = docker.from_env()
-        containers = client.containers.list(
-            filters={"label": f"leaderboard_submission_id={submission.id}"}
+    # Status check
+    if submission.status not in ["Pending", "Running"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot cancel submission with status '{submission.status}'",
         )
 
-        for container in containers:
-            print(f"Killing container {container.id} for submission {submission.id}")
-            container.kill()
+    # Non-admin users can only cancel Pending submissions
+    if not current_user.is_admin and submission.status == "Running":
+        raise HTTPException(
+            status_code=403, detail="Only admins can cancel running submissions"
+        )
 
-        submission.status = "Cancelled"
-        db.commit()
-        return {"message": "Submission cancelled"}
+    try:
+        if submission.status == "Pending":
+            # Remove from Redis queue if still there
+            r.lrem("submission_queue", 0, submission.id)
+            submission.status = "Cancelled"
+            db.commit()
+            return {"message": "Submission cancelled"}
+
+        elif submission.status == "Running":
+            # Kill the docker container
+            client = docker.from_env()
+            containers = client.containers.list(
+                filters={"label": f"leaderboard_submission_id={submission.id}"}
+            )
+
+            for container in containers:
+                print(
+                    f"Killing container {container.id} for submission {submission.id}"
+                )
+                container.kill()
+
+            submission.status = "Cancelled"
+            db.commit()
+            return {"message": "Submission cancelled"}
 
     except Exception as e:
         raise HTTPException(
