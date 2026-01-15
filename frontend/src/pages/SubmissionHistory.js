@@ -37,7 +37,7 @@ const SubmissionHistory = ({
     if (!problemId) {
       const fetchProblems = async () => {
         try {
-          const res = await api.get("/problems");
+          const res = await api.get("/problems/");
           setProblems(res.data);
         } catch (error) {
           console.error("Failed to fetch problems", error);

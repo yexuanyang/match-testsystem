@@ -16,7 +16,7 @@ const ProblemList = () => {
   const fetchProblems = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/problems');
+      const res = await api.get('/problems/');
       setProblems(res.data);
     } catch (error) {
       console.error(error);

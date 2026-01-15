@@ -1,4 +1,20 @@
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: leaderboard_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./data/uploads:/app/data/uploads:ro
+    depends_on:
+      - backend-api
+      - frontend
+    networks:
+      - app_network
+
   db:
     image: postgres:15-alpine
     restart: always
@@ -14,6 +30,10 @@ services:
   redis:
     image: redis:7-alpine
     restart: always
+    command:
+      - redis-server
+      - --port
+      - "6380"
     volumes:
       - ./data/redis:/data
     networks:
@@ -31,11 +51,11 @@ services:
       - ./data/uploads:/app/data/uploads
       - ./data/logs:/app/data/logs
       - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - DATABASE_URL=postgresql://user:password@db/leaderboard
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6380/0
       - UPLOAD_DIR=/app/data/uploads
       - LOG_DIR=/app/data/logs
     depends_on:
@@ -58,11 +78,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock # 关键：允许控制宿主机 Docker
     environment:
       - DATABASE_URL=postgresql://user:password@db/leaderboard
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6380/0
       - UPLOAD_DIR=/app/data/uploads
       - LOG_DIR=/app/data/logs
       # 必须知道宿主机路径才能正确挂载 volume 到新的测试容器中
-      - HOST_UPLOAD_DIR=/home/yyx/workspaces/leaderboard/data/uploads
+      - HOST_UPLOAD_DIR=/home/zhy/match-testsystem/data/uploads
     depends_on:
       - db
       - redis
@@ -74,13 +94,13 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: leaderboard_frontend
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - REACT_APP_API_URL=http://localhost:8000/api/v1
+      - REACT_APP_API_URL=/api/v1
     depends_on:
       - backend-api
     networks:
