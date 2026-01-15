@@ -60,18 +60,6 @@ class Submission(Base):
     answer_path = Column(String, nullable=True)
     report_path = Column(String, nullable=True)
     log_path = Column(String, nullable=True)  # 存储日志文件的相对路径
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    problem_id = Column(Integer, ForeignKey("problems.id"))
-
-    status = Column(
-        String, default="Pending"
-    )  # Pending, Queued, Running, Success, Failed, Error
-    score = Column(Float, nullable=True)
-
-    answer_path = Column(String, nullable=True)
-    report_path = Column(String, nullable=True)
-    log_path = Column(String, nullable=True)  # 存储日志文件的相对路径
 
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
     finished_at = Column(DateTime(timezone=True), nullable=True)

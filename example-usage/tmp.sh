@@ -10,3 +10,4 @@ with open("/tmp/result", "r") as f:
         print("SCORE: 100")
 EOF
 python3 /tmp/check.py
+sleep 30

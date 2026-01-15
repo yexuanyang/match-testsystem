@@ -2,6 +2,7 @@ import os
 import shutil
 from typing import Any, List, Optional
 
+import docker
 from app import models, schemas
 from app.api import deps
 from app.core.config import settings
@@ -144,11 +145,41 @@ def delete_problem(
 ) -> Any:
     """
     Delete a problem. Only Admin.
+    This will also delete all related submissions, cancelling any running ones first.
     """
     problem = db.query(models.Problem).filter(models.Problem.id == problem_id).first()
     if not problem:
         raise HTTPException(status_code=404, detail="Problem not found")
 
+    # Get all submissions for this problem
+    submissions = (
+        db.query(models.Submission)
+        .filter(models.Submission.problem_id == problem_id)
+        .all()
+    )
+
+    # Cancel any running submissions by killing their docker containers
+    try:
+        client = docker.from_env()
+        for submission in submissions:
+            if submission.status == "Running":
+                containers = client.containers.list(
+                    filters={"label": f"leaderboard_submission_id={submission.id}"}
+                )
+                for container in containers:
+                    print(
+                        f"Killing container {container.id} for submission {submission.id}"
+                    )
+                    container.kill()
+    except Exception as e:
+        print(f"Warning: Failed to kill some containers: {str(e)}")
+
+    # Delete all related submissions
+    db.query(models.Submission).filter(
+        models.Submission.problem_id == problem_id
+    ).delete()
+
+    # Delete the problem
     db.delete(problem)
     db.commit()
     return problem
