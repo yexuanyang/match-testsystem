@@ -16,7 +16,6 @@ import {
 import {
   DeleteOutlined,
   StopOutlined,
-  SearchOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
 import api from "../../services/api";
@@ -123,13 +122,13 @@ const SubmissionManagement = () => {
       key: "actions",
       render: (_, record) => (
         <Space>
-          {record.status === "Running" && (
+          {(record.status === "Running" || record.status === "Pending") && (
             <Popconfirm
-              title="Stop this task?"
+              title="Cancel this submission?"
               onConfirm={() => handleStop(record.id)}
             >
               <Button icon={<StopOutlined />} danger size="small">
-                Stop
+                Cancel
               </Button>
             </Popconfirm>
           )}
