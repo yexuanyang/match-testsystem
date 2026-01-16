@@ -20,6 +20,8 @@ import {
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
 import { marked } from "marked";
+import markedKatex from "marked-katex-extension";
+import "katex/dist/katex.min.css";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
 import api from "../../services/api";
@@ -137,6 +139,12 @@ const ProblemManagement = () => {
 
   // SimpleMDE Options with Image Upload and Preview
   const simpleMdeOptions = useMemo(() => {
+    // Configure marked with KaTeX extension
+    marked.use(markedKatex({
+      throwOnError: false,
+      nonStandard: true, // 启用单 $ 的行内公式
+    }));
+    
     // Configure marked with highlight.js
     marked.setOptions({
       highlight: function(code, lang) {
