@@ -33,7 +33,7 @@ services:
     command:
       - redis-server
       - --port
-      - "6380"
+      - "6379"
     volumes:
       - ./data/redis:/data
     networks:
@@ -55,7 +55,7 @@ services:
       - "8000"
     environment:
       - DATABASE_URL=postgresql://user:password@db/leaderboard
-      - REDIS_URL=redis://redis:6380/0
+      - REDIS_URL=redis://redis:6379/0
       - UPLOAD_DIR=/app/data/uploads
       - LOG_DIR=/app/data/logs
     depends_on:
@@ -78,7 +78,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock # 关键：允许控制宿主机 Docker
     environment:
       - DATABASE_URL=postgresql://user:password@db/leaderboard
-      - REDIS_URL=redis://redis:6380/0
+      - REDIS_URL=redis://redis:6379/0
       - UPLOAD_DIR=/app/data/uploads
       - LOG_DIR=/app/data/logs
       # 必须知道宿主机路径才能正确挂载 volume 到新的测试容器中
