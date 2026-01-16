@@ -49,8 +49,12 @@ class Submission(Base):
     __tablename__ = "submissions"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    problem_id = Column(Integer, ForeignKey("problems.id"))
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    problem_id = Column(
+        Integer, ForeignKey("problems.id", ondelete="RESTRICT"), nullable=False
+    )
 
     status = Column(
         String, default="Pending"

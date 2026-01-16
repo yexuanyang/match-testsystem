@@ -54,7 +54,7 @@ const UserManagement = () => {
       message.success("User deleted");
       fetchUsers();
     } catch (error) {
-      message.error("Failed to delete user");
+      message.error(error.response?.data?.detail || "Failed to delete user");
     }
   };
 
