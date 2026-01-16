@@ -127,7 +127,7 @@ def process_submission(db: Session, submission_id: int):
                 pass
         elif exit_code == 0:
             score = (
-                100.0  # Default full score if success and no score printed? Or maybe 0.
+                0.0  # Default full score if success and no score printed? Or maybe 0.
             )
 
         # Update DB
