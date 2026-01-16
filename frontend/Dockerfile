@@ -6,7 +6,7 @@ COPY package.json .
 # COPY package-lock.json .
 
 # 安装依赖
-RUN npm install
+RUN npm install --verbose
 
 COPY . .
 
