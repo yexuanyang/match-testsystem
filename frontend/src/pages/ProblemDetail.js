@@ -9,11 +9,15 @@ import {
   Form,
   Divider,
   Tabs,
+  List,
+  Space,
 } from "antd";
 import {
   UploadOutlined,
   FileZipOutlined,
   FilePdfOutlined,
+  DownloadOutlined,
+  PaperClipOutlined,
 } from "@ant-design/icons";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -86,7 +90,39 @@ const ProblemDetail = () => {
     return e?.fileList;
   };
 
+  const downloadAttachment = async (filename) => {
+    try {
+      const response = await api.get(
+        `/problems/${id}/attachments/${filename}`,
+        { responseType: "blob" }
+      );
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      message.error("Failed to download attachment");
+    }
+  };
+
+  const getAttachments = () => {
+    if (!problem.attachments) return [];
+    try {
+      return JSON.parse(problem.attachments);
+    } catch {
+      return [];
+    }
+  };
+
   if (!problem) return <div>Loading...</div>;
+
+  const attachments = getAttachments();
 
   return (
     <div>
@@ -122,6 +158,40 @@ const ProblemDetail = () => {
               {problem.description || "No description provided."}
             </ReactMarkdown>
           </div>
+
+          {attachments.length > 0 && (
+            <>
+              <Divider />
+              <div style={{ marginTop: 16 }}>
+                <Typography.Title level={5} style={{ marginBottom: 12 }}>
+                  <PaperClipOutlined /> Attachments
+                </Typography.Title>
+                <List
+                  size="small"
+                  bordered
+                  dataSource={attachments}
+                  renderItem={(item) => (
+                    <List.Item
+                      actions={[
+                        <Button
+                          type="link"
+                          icon={<DownloadOutlined />}
+                          onClick={() => downloadAttachment(item.filename)}
+                        >
+                          Download
+                        </Button>,
+                      ]}
+                    >
+                      <Space>
+                        <PaperClipOutlined />
+                        <span>{item.filename}</span>
+                      </Space>
+                    </List.Item>
+                  )}
+                />
+              </div>
+            </>
+          )}
         </Card>
 
         <Card title="Submit Solution">

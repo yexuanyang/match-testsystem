@@ -46,6 +46,7 @@ class ProblemBase(BaseModel):
     test_command: Optional[str] = None
     test_script_path: Optional[str] = None
     submission_map_path: Optional[str] = None
+    attachments: Optional[str] = None  # JSON string of attachment info
 
 
 class ProblemCreate(ProblemBase):

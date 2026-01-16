@@ -10,12 +10,16 @@ import {
   message,
   Radio,
   Upload,
+  List,
+  Tag,
 } from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
   UploadOutlined,
+  PaperClipOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
@@ -34,6 +38,8 @@ const ProblemManagement = () => {
   const [description, setDescription] = useState("");
   const [testMode, setTestMode] = useState("command");
   const [fileList, setFileList] = useState([]);
+  const [attachmentFileList, setAttachmentFileList] = useState([]);
+  const [existingAttachments, setExistingAttachments] = useState([]);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -88,6 +94,18 @@ const ProblemManagement = () => {
       // If we are in script mode but no new file, we assume keeping old one if editing.
     }
 
+    // Append attachment files
+    if (attachmentFileList.length > 0) {
+      attachmentFileList.forEach((file) => {
+        formData.append("attachment_files", file.originFileObj || file);
+      });
+    }
+
+    // If editing, send updated existing attachments list
+    if (editingProblem) {
+      formData.append("existing_attachments", JSON.stringify(existingAttachments));
+    }
+
     try {
       if (editingProblem) {
         await api.put(`/problems/${editingProblem.id}`, formData);
@@ -114,6 +132,12 @@ const ProblemManagement = () => {
     }
   };
 
+  const removeExistingAttachment = (filename) => {
+    setExistingAttachments((curr) =>
+      curr.filter((item) => item.filename !== filename)
+    );
+  };
+
   const openEditModal = (problem) => {
     setEditingProblem(problem);
     setDescription(problem.description || "");
@@ -125,6 +149,20 @@ const ProblemManagement = () => {
       setTestMode("command");
     }
     setFileList([]);
+    setAttachmentFileList([]);
+    
+    // Load existing attachments
+    if (problem.attachments) {
+      try {
+        const attachments = JSON.parse(problem.attachments);
+        setExistingAttachments(attachments);
+      } catch {
+        setExistingAttachments([]);
+      }
+    } else {
+      setExistingAttachments([]);
+    }
+    
     setIsModalOpen(true);
   };
 
@@ -134,6 +172,8 @@ const ProblemManagement = () => {
     form.resetFields();
     setTestMode("command");
     setFileList([]);
+    setAttachmentFileList([]);
+    setExistingAttachments([]);
     setIsModalOpen(true);
   };
 
@@ -222,6 +262,23 @@ const ProblemManagement = () => {
       return false;
     },
     fileList,
+  };
+
+  const attachmentUploadProps = {
+    onRemove: (file) => {
+      setAttachmentFileList((curr) => {
+        const index = curr.indexOf(file);
+        const newFileList = curr.slice();
+        newFileList.splice(index, 1);
+        return newFileList;
+      });
+    },
+    beforeUpload: (file) => {
+      setAttachmentFileList((curr) => [...curr, file]);
+      return false;
+    },
+    fileList: attachmentFileList,
+    multiple: true,
   };
 
   const columns = [
@@ -321,6 +378,49 @@ const ProblemManagement = () => {
 
           <Form.Item name="submission_map_path" label="Submission Mapping Path">
             <Input placeholder="/input/submission.zip" />
+          </Form.Item>
+
+          <Form.Item label="Attachments (Optional)">
+            {existingAttachments.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                  <PaperClipOutlined /> Existing Attachments:
+                </div>
+                <List
+                  size="small"
+                  bordered
+                  dataSource={existingAttachments}
+                  renderItem={(item) => (
+                    <List.Item
+                      actions={[
+                        <Button
+                          type="text"
+                          danger
+                          size="small"
+                          icon={<CloseCircleOutlined />}
+                          onClick={() => removeExistingAttachment(item.filename)}
+                        >
+                          Remove
+                        </Button>,
+                      ]}
+                    >
+                      <Space>
+                        <PaperClipOutlined />
+                        <span>{item.filename}</span>
+                      </Space>
+                    </List.Item>
+                  )}
+                />
+              </div>
+            )}
+            <Upload {...attachmentUploadProps}>
+              <Button icon={<UploadOutlined />}>
+                {existingAttachments.length > 0 ? "Add More Attachments" : "Upload Attachments"}
+              </Button>
+            </Upload>
+            <div style={{ marginTop: 8, color: "gray", fontSize: "12px" }}>
+              Upload patch files, data files, or other materials students may need
+            </div>
           </Form.Item>
 
           <Form.Item label="Description (Markdown supported)">
