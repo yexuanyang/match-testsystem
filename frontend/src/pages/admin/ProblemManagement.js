@@ -19,6 +19,9 @@ import {
 } from "@ant-design/icons";
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
+import { marked } from "marked";
+import hljs from "highlight.js";
+import "highlight.js/styles/github.css";
 import api from "../../services/api";
 
 const ProblemManagement = () => {
@@ -134,6 +137,24 @@ const ProblemManagement = () => {
 
   // SimpleMDE Options with Image Upload and Preview
   const simpleMdeOptions = useMemo(() => {
+    // Configure marked with highlight.js
+    marked.setOptions({
+      highlight: function(code, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+          try {
+            return hljs.highlight(code, { language: lang }).value;
+          } catch (err) {
+            console.error(err);
+          }
+        }
+        return hljs.highlightAuto(code).value;
+      },
+      breaks: true,
+      gfm: true,
+      sanitize: false, // 允许 HTML 标签
+      smartypants: false,
+    });
+
     return {
       spellChecker: false,
       uploadImage: true,
@@ -154,25 +175,8 @@ const ProblemManagement = () => {
         image: ["![", "](/uploads/images/)"],  
       },
       previewRender: (plainText) => {
-        // Simple markdown to HTML converter for preview
-        let html = plainText
-          // Headers
-          .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
-          .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-          .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-          .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-          // Bold
-          .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-          // Italic
-          .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-          // Images
-          .replace(/!\[(.*?)\]\((.*?)\)/gim, '<img alt="$1" src="$2" style="max-width: 100%;" />')
-          // Links
-          .replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" target="_blank">$1</a>')
-          // Line breaks
-          .replace(/\n$/gim, '<br />');
-        
-        return html;
+        // Use marked to render markdown with code highlighting
+        return marked(plainText);
       },
       toolbar: [
         "bold",
