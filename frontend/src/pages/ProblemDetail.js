@@ -72,7 +72,8 @@ const ProblemDetail = () => {
       // Refresh logic could go here or navigate to history
       navigate("/history");
     } catch (error) {
-      message.error("Submission failed.");
+      const errorMsg = error.response?.data?.detail || "Submission failed.";
+      message.error(errorMsg, 5);
     } finally {
       setSubmitting(false);
     }

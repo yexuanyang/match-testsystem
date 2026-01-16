@@ -94,15 +94,53 @@ def process_submission(db: Session, submission_id: int):
             command=run_command,
             volumes=volumes,
             detach=True,
-            mem_limit="512m",  # Limit memory
-            cpu_quota=50000,  # Limit CPU (0.5 CPU)
-            network_disabled=True,
+            mem_limit="512m",  # 限制内存
+            memswap_limit="512m",  # 禁用 swap
+            cpu_quota=50000,  # 限制 CPU (0.5 CPU)
+            cpu_period=100000,
+            network_disabled=True,  # 禁用网络
+            read_only=False,  # 允许写入（测试需要）
+            cap_drop=["ALL"],  # 移除所有 capabilities
+            security_opt=["no-new-privileges"],  # 防止提权
+            pids_limit=100,  # 限制进程数
             labels={"leaderboard_submission_id": str(submission_id)},
         )
 
-        # Wait for finish
-        result = container.wait(timeout=300)  # 5 minutes timeout
-        exit_code = result["StatusCode"]
+        # Wait for finish with timeout
+        try:
+            result = container.wait(timeout=300)  # 5 分钟超时
+            exit_code = result["StatusCode"]
+        except Exception as e:
+            print(f"Container timeout or error for submission {submission_id}: {e}")
+            # Kill the container
+            try:
+                container.kill()
+            except:
+                pass
+            exit_code = -1
+            logs = f"Container execution timeout (>300s) or error: {str(e)}"
+
+            # Remove container
+            try:
+                container.remove(force=True)
+            except:
+                pass
+
+            # Write error log
+            log_filename = f"{submission.id}_{int(time.time())}.log"
+            log_path_container = os.path.join(settings.LOG_DIR, log_filename)
+            with open(log_path_container, "w") as f:
+                f.write(f"Exit Code: {exit_code}\n")
+                f.write("-" * 20 + "\n")
+                f.write(logs)
+
+            submission.status = "Failed"
+            submission.score = 0.0
+            submission.log_path = log_path_container
+            submission.finished_at = datetime.utcnow()
+            db.commit()
+            print(f"Submission {submission_id} timeout/error handled")
+            return
 
         # Get Logs
         logs = container.logs(stdout=True, stderr=True).decode("utf-8", errors="ignore")
