@@ -26,7 +26,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { github } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { ghcolors } from "react-syntax-highlighter/dist/esm/styles/prism";
 import api from "../services/api";
 
 import SubmissionHistory from "./SubmissionHistory";
@@ -94,9 +94,9 @@ const ProblemDetail = () => {
     try {
       const response = await api.get(
         `/problems/${id}/attachments/${filename}`,
-        { responseType: "blob" }
+        { responseType: "blob" },
       );
-      
+
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
@@ -140,7 +140,7 @@ const ProblemDetail = () => {
                   const match = /language-(\w+)/.exec(className || "");
                   return !inline && match ? (
                     <SyntaxHighlighter
-                      style={github}
+                      style={ghcolors}
                       language={match[1]}
                       PreTag="div"
                       {...props}
