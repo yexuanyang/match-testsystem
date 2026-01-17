@@ -9,8 +9,12 @@ from fastapi.middleware.cors import CORSMiddleware
 # Create tables
 Base.metadata.create_all(bind=engine)
 
+# Production mode: disable API documentation
 app = FastAPI(
-    title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    title=settings.PROJECT_NAME,
+    openapi_url=None,  # Disable /openapi.json
+    docs_url=None,  # Disable /docs
+    redoc_url=None,  # Disable /redoc
 )
 
 # Set all CORS enabled origins
