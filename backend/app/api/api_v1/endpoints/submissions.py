@@ -258,7 +258,7 @@ def get_submission_log(
     return {"log": content}
 
 
-@router.delete("/{submission_id}", response_model=schemas.SubmissionOut)
+@router.delete("/{submission_id}")
 def delete_submission(
     submission_id: int,
     db: Session = Depends(get_db),
