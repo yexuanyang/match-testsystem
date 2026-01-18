@@ -58,6 +58,8 @@ def create_problem(
     docker_image: str = Form(...),
     test_command: Optional[str] = Form(None),
     submission_map_path: Optional[str] = Form(None),
+    performance_enabled: bool = Form(False),
+    performance_unit: Optional[str] = Form(None),
     test_script_file: Optional[UploadFile] = File(None),
     attachment_files: List[UploadFile] = File(None),
     current_user: models.User = Depends(deps.get_current_admin_user),
@@ -71,6 +73,8 @@ def create_problem(
         docker_image=docker_image,
         test_command=test_command,
         submission_map_path=submission_map_path,
+        performance_enabled=performance_enabled,
+        performance_unit=performance_unit,
     )
     db.add(problem)
     db.commit()
@@ -128,6 +132,8 @@ def update_problem(
     docker_image: str = Form(...),
     test_command: Optional[str] = Form(None),
     submission_map_path: Optional[str] = Form(None),
+    performance_enabled: bool = Form(False),
+    performance_unit: Optional[str] = Form(None),
     test_script_file: Optional[UploadFile] = File(None),
     attachment_files: List[UploadFile] = File(None),
     existing_attachments: Optional[str] = Form(None),
@@ -147,6 +153,8 @@ def update_problem(
     problem.docker_image = docker_image
     problem.test_command = test_command
     problem.submission_map_path = submission_map_path
+    problem.performance_enabled = performance_enabled
+    problem.performance_unit = performance_unit
 
     if clear_script:
         problem.test_script_path = None

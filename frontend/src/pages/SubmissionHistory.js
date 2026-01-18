@@ -124,6 +124,21 @@ const SubmissionHistory = ({
       render: (score) => (score !== null ? score : "-"),
     },
     {
+      title: "Performance",
+      dataIndex: "performance",
+      key: "performance",
+      render: (performance, record) => {
+        if (!record.problem?.performance_enabled) {
+          return "N/A";
+        }
+        if (performance !== null && performance !== undefined) {
+          const unit = record.problem?.performance_unit || "";
+          return `${performance} ${unit}`;
+        }
+        return "-";
+      },
+    },
+    {
       title: "Action",
       key: "action",
       render: (_, record) => {

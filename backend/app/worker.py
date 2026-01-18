@@ -168,9 +168,20 @@ def process_submission(db: Session, submission_id: int):
                 0.0  # Default full score if success and no score printed? Or maybe 0.
             )
 
+        # Parse Performance (if enabled for this problem)
+        performance = None
+        if problem.performance_enabled:
+            performance_match = re.search(r"PERFORMANCE:\s*([\d\.]+)", logs)
+            if performance_match:
+                try:
+                    performance = float(performance_match.group(1))
+                except:
+                    pass
+
         # Update DB
         submission.status = "Success" if exit_code == 0 else "Failed"
         submission.score = score
+        submission.performance = performance
         submission.log_path = log_path_container
         submission.finished_at = datetime.utcnow()
         db.commit()

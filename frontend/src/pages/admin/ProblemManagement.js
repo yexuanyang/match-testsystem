@@ -12,6 +12,7 @@ import {
   Upload,
   List,
   Tag,
+  Switch,
 } from "antd";
 import {
   EditOutlined,
@@ -37,6 +38,7 @@ const ProblemManagement = () => {
   const [editingProblem, setEditingProblem] = useState(null);
   const [description, setDescription] = useState("");
   const [testMode, setTestMode] = useState("command");
+  const [performanceEnabled, setPerformanceEnabled] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [attachmentFileList, setAttachmentFileList] = useState([]);
   const [existingAttachments, setExistingAttachments] = useState([]);
@@ -77,6 +79,12 @@ const ProblemManagement = () => {
     if (description) formData.append("description", description);
     if (values.submission_map_path)
       formData.append("submission_map_path", values.submission_map_path);
+    
+    // Add performance fields
+    formData.append("performance_enabled", performanceEnabled);
+    if (performanceEnabled && values.performance_unit) {
+      formData.append("performance_unit", values.performance_unit);
+    }
 
     if (testMode === "command") {
       if (values.test_command)
@@ -142,6 +150,7 @@ const ProblemManagement = () => {
     setEditingProblem(problem);
     setDescription(problem.description || "");
     form.setFieldsValue(problem);
+    setPerformanceEnabled(problem.performance_enabled || false);
 
     if (problem.test_script_path) {
       setTestMode("script");
@@ -171,6 +180,7 @@ const ProblemManagement = () => {
     setDescription("");
     form.resetFields();
     setTestMode("command");
+    setPerformanceEnabled(false);
     setFileList([]);
     setAttachmentFileList([]);
     setExistingAttachments([]);
@@ -378,6 +388,27 @@ const ProblemManagement = () => {
 
           <Form.Item name="submission_map_path" label="Submission Mapping Path">
             <Input placeholder="/input/submission.zip" />
+          </Form.Item>
+
+          <Form.Item label="Performance Tracking">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Switch
+                checked={performanceEnabled}
+                onChange={setPerformanceEnabled}
+                checkedChildren="Enabled"
+                unCheckedChildren="Disabled"
+              />
+              {performanceEnabled && (
+                <Form.Item
+                  name="performance_unit"
+                  label="Performance Unit"
+                  rules={[{ required: true, message: 'Please input performance unit' }]}
+                  style={{ marginBottom: 0 }}
+                >
+                  <Input placeholder="e.g., s, ms, kg, MB" style={{ width: '200px' }} />
+                </Form.Item>
+              )}
+            </Space>
           </Form.Item>
 
           <Form.Item label="Attachments (Optional)">

@@ -43,6 +43,12 @@ class Problem(Base):
     attachments = Column(
         Text, nullable=True
     )  # JSON string storing attachment file info [{"filename": "x.patch", "path": "/uploads/..."}]
+    performance_enabled = Column(
+        Boolean, default=False
+    )  # Whether to track performance metrics
+    performance_unit = Column(
+        String, nullable=True
+    )  # Unit for performance metric (e.g., 's', 'kg', 'ms')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     submissions = relationship("Submission", back_populates="problem")
@@ -63,6 +69,7 @@ class Submission(Base):
         String, default="Pending"
     )  # Pending, Queued, Running, Success, Failed, Error
     score = Column(Float, nullable=True)
+    performance = Column(Float, nullable=True)  # Performance metric value
 
     answer_path = Column(String, nullable=True)
     report_path = Column(String, nullable=True)
