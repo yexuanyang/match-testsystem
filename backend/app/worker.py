@@ -89,20 +89,25 @@ def process_submission(db: Session, submission_id: int):
                 pass
 
         # Run Container
+        # GPU support: increase memory limit for GPU workloads
+        # Adjust mem_limit based on your needs (e.g., "4g" for GPU tasks, "512m" for CPU tasks)
         container = docker_client.containers.run(
             image=problem.docker_image,
             command=run_command,
             volumes=volumes,
             detach=True,
-            mem_limit="512m",  # 限制内存
-            memswap_limit="512m",  # 禁用 swap
-            cpu_quota=50000,  # 限制 CPU (0.5 CPU)
+            mem_limit="4g",  # 限制内存（GPU任务需要更多内存）
+            memswap_limit="4g",  # 禁用 swap
+            cpu_quota=100000,  # 限制 CPU (1.0 CPU, GPU任务可能需要更多CPU)
             cpu_period=100000,
-            network_disabled=True,  # 禁用网络
+            network_disabled=False,  # GPU 驱动可能需要网络访问（可根据需要禁用）
             read_only=False,  # 允许写入（测试需要）
             cap_drop=["ALL"],  # 移除所有 capabilities
             security_opt=["no-new-privileges"],  # 防止提权
-            pids_limit=100,  # 限制进程数
+            pids_limit=200,  # 限制进程数（GPU程序可能需要更多进程）
+            device_requests=[
+                docker.types.DeviceRequest(count=-1, capabilities=[["gpu"]])
+            ],  # 启用 GPU 支持（所有GPU）
             labels={"leaderboard_submission_id": str(submission_id)},
         )
 
