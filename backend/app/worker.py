@@ -113,7 +113,7 @@ def process_submission(db: Session, submission_id: int):
 
         # Wait for finish with timeout
         try:
-            result = container.wait(timeout=300)  # 5 分钟超时
+            result = container.wait(timeout=480)  # 8 分钟超时
             exit_code = result["StatusCode"]
         except Exception as e:
             print(f"Container timeout or error for submission {submission_id}: {e}")
@@ -123,7 +123,7 @@ def process_submission(db: Session, submission_id: int):
             except:
                 pass
             exit_code = -1
-            logs = f"Container execution timeout (>300s) or error: {str(e)}"
+            logs = f"Container execution timeout (>480s) or error: {str(e)}"
 
             # Remove container
             try:
