@@ -109,59 +109,62 @@ def create_submission(
             detail=f"File type not allowed. Allowed: {', '.join(ALLOWED_EXTENSIONS)}",
         )
 
-    # 4. Check minimum submission interval (3 minutes)
-    last_submission = (
-        db.query(models.Submission)
-        .filter(models.Submission.user_id == current_user.id)
-        .order_by(models.Submission.submitted_at.desc())
-        .first()
-    )
+    # 4. Check minimum submission interval (3 minutes) - Skip for admins
+    if not current_user.is_admin:
+        last_submission = (
+            db.query(models.Submission)
+            .filter(models.Submission.user_id == current_user.id)
+            .order_by(models.Submission.submitted_at.desc())
+            .first()
+        )
 
-    if last_submission:
-        time_since_last = (
-            datetime.now(timezone.utc) - last_submission.submitted_at
-        ).total_seconds()
-        if time_since_last < MIN_SUBMISSION_INTERVAL:
-            wait_time = int(MIN_SUBMISSION_INTERVAL - time_since_last)
+        if last_submission:
+            time_since_last = (
+                datetime.now(timezone.utc) - last_submission.submitted_at
+            ).total_seconds()
+            if time_since_last < MIN_SUBMISSION_INTERVAL:
+                wait_time = int(MIN_SUBMISSION_INTERVAL - time_since_last)
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Please wait {wait_time} seconds before submitting again. Minimum interval: {MIN_SUBMISSION_INTERVAL // 60} minutes.",
+                )
+
+    # 5. Check submission frequency (hourly limit) - Skip for admins
+    if not current_user.is_admin:
+        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+        recent_submissions = (
+            db.query(models.Submission)
+            .filter(
+                models.Submission.user_id == current_user.id,
+                models.Submission.submitted_at >= one_hour_ago,
+            )
+            .count()
+        )
+
+        if recent_submissions >= MAX_SUBMISSIONS_PER_HOUR:
             raise HTTPException(
                 status_code=429,
-                detail=f"Please wait {wait_time} seconds before submitting again. Minimum interval: {MIN_SUBMISSION_INTERVAL // 60} minutes.",
+                detail=f"Too many submissions. Maximum {MAX_SUBMISSIONS_PER_HOUR} per hour.",
             )
 
-    # 5. Check submission frequency (hourly limit)
-    one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
-    recent_submissions = (
-        db.query(models.Submission)
-        .filter(
-            models.Submission.user_id == current_user.id,
-            models.Submission.submitted_at >= one_hour_ago,
-        )
-        .count()
-    )
-
-    if recent_submissions >= MAX_SUBMISSIONS_PER_HOUR:
-        raise HTTPException(
-            status_code=429,
-            detail=f"Too many submissions. Maximum {MAX_SUBMISSIONS_PER_HOUR} per hour.",
+    # 6. Check per-problem submission frequency (daily limit) - Skip for admins
+    if not current_user.is_admin:
+        one_day_ago = datetime.now(timezone.utc) - timedelta(days=1)
+        problem_submissions = (
+            db.query(models.Submission)
+            .filter(
+                models.Submission.user_id == current_user.id,
+                models.Submission.problem_id == problem_id,
+                models.Submission.submitted_at >= one_day_ago,
+            )
+            .count()
         )
 
-    # 6. Check per-problem submission frequency (daily limit)
-    one_day_ago = datetime.now(timezone.utc) - timedelta(days=1)
-    problem_submissions = (
-        db.query(models.Submission)
-        .filter(
-            models.Submission.user_id == current_user.id,
-            models.Submission.problem_id == problem_id,
-            models.Submission.submitted_at >= one_day_ago,
-        )
-        .count()
-    )
-
-    if problem_submissions >= MAX_SUBMISSIONS_PER_PROBLEM_PER_DAY:
-        raise HTTPException(
-            status_code=429,
-            detail=f"Too many submissions for this problem. Maximum {MAX_SUBMISSIONS_PER_PROBLEM_PER_DAY} per day.",
-        )
+        if problem_submissions >= MAX_SUBMISSIONS_PER_PROBLEM_PER_DAY:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Too many submissions for this problem. Maximum {MAX_SUBMISSIONS_PER_PROBLEM_PER_DAY} per day.",
+            )
 
     # 7. Check pending submissions count
     pending_count = (
