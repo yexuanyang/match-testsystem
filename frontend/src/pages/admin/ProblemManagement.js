@@ -46,6 +46,9 @@ const ProblemManagement = () => {
 
   useEffect(() => {
     fetchProblems();
+    return () => {
+      document.body.style.overflow = "auto";
+    };
   }, []);
 
   const fetchProblems = async () => {
