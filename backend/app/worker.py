@@ -109,6 +109,10 @@ def process_submission(db: Session, submission_id: int):
                 docker.types.DeviceRequest(count=-1, capabilities=[["gpu"]])
             ],  # 启用 GPU 支持（所有GPU）
             labels={"leaderboard_submission_id": str(submission_id)},
+            environment={
+                "PROBLEM_ID": str(submission.problem_id),
+                "USER_ID": str(submission.user_id),
+            },
         )
 
         # Wait for finish with timeout
