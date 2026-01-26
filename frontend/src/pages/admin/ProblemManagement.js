@@ -218,6 +218,7 @@ const ProblemManagement = () => {
 
     return {
       spellChecker: false,
+      maxHeight: "400px",
       uploadImage: true,
       imageUploadFunction: (file, onSuccess, onError) => {
         const formData = new FormData();

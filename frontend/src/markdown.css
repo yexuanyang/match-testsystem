@@ -121,3 +121,18 @@
 .markdown-body sup {
   top: -0.5em;
 }
+
+/* EasyMDE Fullscreen Fixes */
+.editor-toolbar.fullscreen {
+  z-index: 1100 !important; /* Higher than Ant Design Modals (1000) */
+  background: white;
+  border-bottom: 1px solid #ddd;
+}
+
+.CodeMirror-fullscreen {
+  z-index: 1099 !important;
+}
+
+.editor-preview-side.editor-preview-active-side {
+  z-index: 1101 !important;
+}
