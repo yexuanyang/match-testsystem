@@ -177,6 +177,16 @@ def delete_user(
     if user.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
 
+    # Check if user has submissions
+    submission_count = (
+        db.query(models.Submission).filter(models.Submission.user_id == user_id).count()
+    )
+    if submission_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot delete user: has {submission_count} submission(s). Delete submissions first.",
+        )
+
     db.delete(user)
     db.commit()
     return user

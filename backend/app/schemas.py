@@ -46,6 +46,9 @@ class ProblemBase(BaseModel):
     test_command: Optional[str] = None
     test_script_path: Optional[str] = None
     submission_map_path: Optional[str] = None
+    attachments: Optional[str] = None  # JSON string of attachment info
+    performance_enabled: bool = False
+    performance_unit: Optional[str] = None
 
 
 class ProblemCreate(ProblemBase):
@@ -66,8 +69,10 @@ class SubmissionOut(BaseModel):
     user_id: int
     user: UserBase
     problem_id: int
+    problem: ProblemOut  # Include full problem details
     status: str
     score: Optional[float] = None
+    performance: Optional[float] = None
     submitted_at: datetime
     finished_at: Optional[datetime] = None
 

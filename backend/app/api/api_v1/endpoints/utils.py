@@ -31,10 +31,9 @@ def upload_image(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(image.file, buffer)
 
-    # Return full URL so frontend can directly use it in markdown
-    return {
-        "url": f"{settings.BACKEND_URL}{settings.API_V1_STR}/utils/images/{filename}"
-    }
+    # Return relative URL for better compatibility with port forwarding
+    # Using /uploads/ path served by nginx for better performance
+    return {"url": f"/uploads/images/{filename}"}
 
 
 @router.get("/images/{filename}")

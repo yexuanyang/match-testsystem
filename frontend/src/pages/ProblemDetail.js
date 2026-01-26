@@ -9,13 +9,24 @@ import {
   Form,
   Divider,
   Tabs,
+  List,
+  Space,
 } from "antd";
 import {
   UploadOutlined,
   FileZipOutlined,
   FilePdfOutlined,
+  DownloadOutlined,
+  PaperClipOutlined,
 } from "@ant-design/icons";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeRaw from "rehype-raw";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { ghcolors } from "react-syntax-highlighter/dist/esm/styles/prism";
 import api from "../services/api";
 
 import SubmissionHistory from "./SubmissionHistory";
@@ -65,7 +76,8 @@ const ProblemDetail = () => {
       // Refresh logic could go here or navigate to history
       navigate("/history");
     } catch (error) {
-      message.error("Submission failed.");
+      const errorMsg = error.response?.data?.detail || "Submission failed.";
+      message.error(errorMsg, 5);
     } finally {
       setSubmitting(false);
     }
@@ -78,7 +90,39 @@ const ProblemDetail = () => {
     return e?.fileList;
   };
 
+  const downloadAttachment = async (filename) => {
+    try {
+      const response = await api.get(
+        `/problems/${id}/attachments/${filename}`,
+        { responseType: "blob" },
+      );
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      message.error("Failed to download attachment");
+    }
+  };
+
+  const getAttachments = () => {
+    if (!problem.attachments) return [];
+    try {
+      return JSON.parse(problem.attachments);
+    } catch {
+      return [];
+    }
+  };
+
   if (!problem) return <div>Loading...</div>;
+
+  const attachments = getAttachments();
 
   return (
     <div>
@@ -87,9 +131,67 @@ const ProblemDetail = () => {
       <div style={{ display: "flex", gap: "20px", flexDirection: "column" }}>
         <Card title="Problem Description">
           {/* In a real app, description might be fetched from a markdown file URL */}
-          <ReactMarkdown>
-            {problem.description || "No description provided."}
-          </ReactMarkdown>
+          <div className="markdown-body">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeRaw, rehypeKatex]}
+              components={{
+                code({ node, inline, className, children, ...props }) {
+                  const match = /language-(\w+)/.exec(className || "");
+                  return !inline && match ? (
+                    <SyntaxHighlighter
+                      style={ghcolors}
+                      language={match[1]}
+                      PreTag="div"
+                      {...props}
+                    >
+                      {String(children).replace(/\n$/, "")}
+                    </SyntaxHighlighter>
+                  ) : (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+              }}
+            >
+              {problem.description || "No description provided."}
+            </ReactMarkdown>
+          </div>
+
+          {attachments.length > 0 && (
+            <>
+              <Divider />
+              <div style={{ marginTop: 16 }}>
+                <Typography.Title level={5} style={{ marginBottom: 12 }}>
+                  <PaperClipOutlined /> Attachments
+                </Typography.Title>
+                <List
+                  size="small"
+                  bordered
+                  dataSource={attachments}
+                  renderItem={(item) => (
+                    <List.Item
+                      actions={[
+                        <Button
+                          type="link"
+                          icon={<DownloadOutlined />}
+                          onClick={() => downloadAttachment(item.filename)}
+                        >
+                          Download
+                        </Button>,
+                      ]}
+                    >
+                      <Space>
+                        <PaperClipOutlined />
+                        <span>{item.filename}</span>
+                      </Space>
+                    </List.Item>
+                  )}
+                />
+              </div>
+            </>
+          )}
         </Card>
 
         <Card title="Submit Solution">

@@ -10,15 +10,25 @@ import {
   message,
   Radio,
   Upload,
+  List,
+  Tag,
+  Switch,
 } from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
   UploadOutlined,
+  PaperClipOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
+import { marked } from "marked";
+import markedKatex from "marked-katex-extension";
+import "katex/dist/katex.min.css";
+import hljs from "highlight.js";
+import "highlight.js/styles/github.css";
 import api from "../../services/api";
 
 const ProblemManagement = () => {
@@ -28,7 +38,10 @@ const ProblemManagement = () => {
   const [editingProblem, setEditingProblem] = useState(null);
   const [description, setDescription] = useState("");
   const [testMode, setTestMode] = useState("command");
+  const [performanceEnabled, setPerformanceEnabled] = useState(false);
   const [fileList, setFileList] = useState([]);
+  const [attachmentFileList, setAttachmentFileList] = useState([]);
+  const [existingAttachments, setExistingAttachments] = useState([]);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -66,6 +79,12 @@ const ProblemManagement = () => {
     if (description) formData.append("description", description);
     if (values.submission_map_path)
       formData.append("submission_map_path", values.submission_map_path);
+    
+    // Add performance fields
+    formData.append("performance_enabled", performanceEnabled);
+    if (performanceEnabled && values.performance_unit) {
+      formData.append("performance_unit", values.performance_unit);
+    }
 
     if (testMode === "command") {
       if (values.test_command)
@@ -81,6 +100,18 @@ const ProblemManagement = () => {
         );
       }
       // If we are in script mode but no new file, we assume keeping old one if editing.
+    }
+
+    // Append attachment files
+    if (attachmentFileList.length > 0) {
+      attachmentFileList.forEach((file) => {
+        formData.append("attachment_files", file.originFileObj || file);
+      });
+    }
+
+    // If editing, send updated existing attachments list
+    if (editingProblem) {
+      formData.append("existing_attachments", JSON.stringify(existingAttachments));
     }
 
     try {
@@ -109,10 +140,17 @@ const ProblemManagement = () => {
     }
   };
 
+  const removeExistingAttachment = (filename) => {
+    setExistingAttachments((curr) =>
+      curr.filter((item) => item.filename !== filename)
+    );
+  };
+
   const openEditModal = (problem) => {
     setEditingProblem(problem);
     setDescription(problem.description || "");
     form.setFieldsValue(problem);
+    setPerformanceEnabled(problem.performance_enabled || false);
 
     if (problem.test_script_path) {
       setTestMode("script");
@@ -120,6 +158,20 @@ const ProblemManagement = () => {
       setTestMode("command");
     }
     setFileList([]);
+    setAttachmentFileList([]);
+    
+    // Load existing attachments
+    if (problem.attachments) {
+      try {
+        const attachments = JSON.parse(problem.attachments);
+        setExistingAttachments(attachments);
+      } catch {
+        setExistingAttachments([]);
+      }
+    } else {
+      setExistingAttachments([]);
+    }
+    
     setIsModalOpen(true);
   };
 
@@ -128,13 +180,41 @@ const ProblemManagement = () => {
     setDescription("");
     form.resetFields();
     setTestMode("command");
+    setPerformanceEnabled(false);
     setFileList([]);
+    setAttachmentFileList([]);
+    setExistingAttachments([]);
     setIsModalOpen(true);
   };
 
-  // Image Upload Handler for SimpleMDE
-  const imageUploadOptions = useMemo(() => {
+  // SimpleMDE Options with Image Upload and Preview
+  const simpleMdeOptions = useMemo(() => {
+    // Configure marked with KaTeX extension
+    marked.use(markedKatex({
+      throwOnError: false,
+      nonStandard: true, // 启用单 $ 的行内公式
+    }));
+    
+    // Configure marked with highlight.js
+    marked.setOptions({
+      highlight: function(code, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+          try {
+            return hljs.highlight(code, { language: lang }).value;
+          } catch (err) {
+            console.error(err);
+          }
+        }
+        return hljs.highlightAuto(code).value;
+      },
+      breaks: true,
+      gfm: true,
+      sanitize: false, // 允许 HTML 标签
+      smartypants: false,
+    });
+
     return {
+      spellChecker: false,
       uploadImage: true,
       imageUploadFunction: (file, onSuccess, onError) => {
         const formData = new FormData();
@@ -148,6 +228,33 @@ const ProblemManagement = () => {
             onError("Upload failed");
           });
       },
+      insertTexts: {
+        link: ["[", "](https://)"],
+        image: ["![", "](/uploads/images/)"],  
+      },
+      previewRender: (plainText) => {
+        // Use marked to render markdown with code highlighting
+        return marked(plainText);
+      },
+      toolbar: [
+        "bold",
+        "italic",
+        "heading",
+        "|",
+        "quote",
+        "code",
+        "unordered-list",
+        "ordered-list",
+        "|",
+        "link",
+        "image",
+        "|",
+        "preview",
+        "side-by-side",
+        "fullscreen",
+        "|",
+        "guide",
+      ],
     };
   }, []);
 
@@ -165,6 +272,23 @@ const ProblemManagement = () => {
       return false;
     },
     fileList,
+  };
+
+  const attachmentUploadProps = {
+    onRemove: (file) => {
+      setAttachmentFileList((curr) => {
+        const index = curr.indexOf(file);
+        const newFileList = curr.slice();
+        newFileList.splice(index, 1);
+        return newFileList;
+      });
+    },
+    beforeUpload: (file) => {
+      setAttachmentFileList((curr) => [...curr, file]);
+      return false;
+    },
+    fileList: attachmentFileList,
+    multiple: true,
   };
 
   const columns = [
@@ -266,11 +390,75 @@ const ProblemManagement = () => {
             <Input placeholder="/input/submission.zip" />
           </Form.Item>
 
+          <Form.Item label="Performance Tracking">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Switch
+                checked={performanceEnabled}
+                onChange={setPerformanceEnabled}
+                checkedChildren="Enabled"
+                unCheckedChildren="Disabled"
+              />
+              {performanceEnabled && (
+                <Form.Item
+                  name="performance_unit"
+                  label="Performance Unit"
+                  rules={[{ required: true, message: 'Please input performance unit' }]}
+                  style={{ marginBottom: 0 }}
+                >
+                  <Input placeholder="e.g., s, ms, kg, MB" style={{ width: '200px' }} />
+                </Form.Item>
+              )}
+            </Space>
+          </Form.Item>
+
+          <Form.Item label="Attachments (Optional)">
+            {existingAttachments.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                  <PaperClipOutlined /> Existing Attachments:
+                </div>
+                <List
+                  size="small"
+                  bordered
+                  dataSource={existingAttachments}
+                  renderItem={(item) => (
+                    <List.Item
+                      actions={[
+                        <Button
+                          type="text"
+                          danger
+                          size="small"
+                          icon={<CloseCircleOutlined />}
+                          onClick={() => removeExistingAttachment(item.filename)}
+                        >
+                          Remove
+                        </Button>,
+                      ]}
+                    >
+                      <Space>
+                        <PaperClipOutlined />
+                        <span>{item.filename}</span>
+                      </Space>
+                    </List.Item>
+                  )}
+                />
+              </div>
+            )}
+            <Upload {...attachmentUploadProps}>
+              <Button icon={<UploadOutlined />}>
+                {existingAttachments.length > 0 ? "Add More Attachments" : "Upload Attachments"}
+              </Button>
+            </Upload>
+            <div style={{ marginTop: 8, color: "gray", fontSize: "12px" }}>
+              Upload patch files, data files, or other materials students may need
+            </div>
+          </Form.Item>
+
           <Form.Item label="Description (Markdown supported)">
             <SimpleMDE
               value={description}
               onChange={setDescription}
-              options={imageUploadOptions}
+              options={simpleMdeOptions}
             />
           </Form.Item>
         </Form>

@@ -32,14 +32,23 @@ class Problem(Base):
     title = Column(String, index=True, nullable=False)
     description = Column(
         Text, nullable=True
-    )  # 可以存储简单的文本，或者前端通过 API 获取 Markdown 文件内容
-    description_path = Column(String, nullable=True)  # 存储 Markdown 文件路径
-    docker_image = Column(String, nullable=False)  # 评测用的镜像名
-    test_command = Column(String, nullable=True)  # 容器内执行的测试命令
-    test_script_path = Column(String, nullable=True)  # 存储测试脚本路径
+    )  # Store simple text or frontend fetches Markdown file content via API
+    description_path = Column(String, nullable=True)  # Store Markdown file path
+    docker_image = Column(String, nullable=False)  # Docker image for evaluation
+    test_command = Column(String, nullable=True)  # Test command to execute in container
+    test_script_path = Column(String, nullable=True)  # Store test script path
     submission_map_path = Column(
         String, nullable=True
-    )  # 答案映射路径，默认为 /input/submission.zip
+    )  # Answer mapping path, defaults to /input/submission.zip
+    attachments = Column(
+        Text, nullable=True
+    )  # JSON string storing attachment file info [{"filename": "x.patch", "path": "/uploads/..."}]
+    performance_enabled = Column(
+        Boolean, default=False
+    )  # Whether to track performance metrics
+    performance_unit = Column(
+        String, nullable=True
+    )  # Unit for performance metric (e.g., 's', 'kg', 'ms')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     submissions = relationship("Submission", back_populates="problem")
@@ -49,13 +58,18 @@ class Submission(Base):
     __tablename__ = "submissions"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    problem_id = Column(Integer, ForeignKey("problems.id"))
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    problem_id = Column(
+        Integer, ForeignKey("problems.id", ondelete="RESTRICT"), nullable=False
+    )
 
     status = Column(
         String, default="Pending"
     )  # Pending, Queued, Running, Success, Failed, Error
     score = Column(Float, nullable=True)
+    performance = Column(Float, nullable=True)  # Performance metric value
 
     answer_path = Column(String, nullable=True)
     report_path = Column(String, nullable=True)

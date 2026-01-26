@@ -8,20 +8,27 @@
 docker-compose up -d --build
 ```
 
-部署成功可以用`docker-compose ps`看到下面的5个容器：
-1. db：使用postgresql镜像作为整个系统的数据库
-2. redis：使用redis做任务队列的管理
-3. backend-api：管理后端API
-4. backend-worker：接受backend-api的命令，利用宿主机dockerd来创建一个同级容器运行题目的测试
-5. frontend：管理系统前端
+部署成功可以用`docker-compose ps`看到下面的6个容器：
+1. nginx：作为反向代理服务器，统一处理所有前后端请求
+2. db：使用postgresql镜像作为整个系统的数据库
+3. redis：使用redis做任务队列的管理
+4. backend-api：管理后端API
+5. backend-worker：接受backend-api的命令，利用宿主机dockerd来创建一个同级容器运行题目的测试
+6. frontend：管理系统前端
 
 
 部署时和环境相关的设置：
 1. docker-compose.yml：
-    1. 这个文件里规定了前端上传的文件（用户答案，题目测试脚本等）需要放在宿主机的什么位置，然后映射到容器中。这个变量是`HOST_UPLOAD_DIR`，在backend-worker的environment中设置，需要根据实际情况调整
-    2. 前后端部署使用的端口，前端默认使用3000端口，后端默认暴露在8000端口。
-        1. 前端修改：需要修改docker-compose.yml中对frontend的端口映射，比如如果想在宿主机中用3333端口，那么将`3000:3000`改成`3333:3000`。
-        2. 后端修改：需要修改对backend-api的启动命令，同时需要注意frontend中使用的后端API URL需要同时调整。比如如果想用8888端口，那么启动命令中的8000变成8888，然后frontend的environment中`REACT_APP_API_URL=http://localhost:8888/api/v1`
+    1. 这个文件里规定了前端上传的文件（用户答案，题目测试脚本等）需要放在宿主机的什么位置，然后映射到容器中。这个变量是`HOST_UPLOAD_DIR`，在backend-worker的environment中设置，**必须根据实际部署路径调整**（例如：`/home/用户名/项目路径/data/uploads`）
+    2. 系统通过 Nginx 统一对外提供服务，默认使用 **80 端口**：
+        - 前端页面：`http://服务器IP/`
+        - 后端API：`http://服务器IP/api/`
+        - 上传文件：`http://服务器IP/uploads/`
+        - API文档：`http://服务器IP/docs`
+    3. 如果需要修改对外端口（例如改为 8080）：
+        - 修改 docker-compose.yml 中 nginx 服务的端口映射：将 `"80:80"` 改为 `"8080:80"`
+        - 前后端容器的端口无需修改，它们通过内部网络与 Nginx 通信
+    4. 如果使用端口转发（如 `localhost:81 → 服务器:80`），需要确保 nginx 配置中的 `proxy_redirect off;` 已设置
 
 如果需要添加问题，那么需要准备一个用于测试的镜像，然后准备一个用于测试的脚本。
 

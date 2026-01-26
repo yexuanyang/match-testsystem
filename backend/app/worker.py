@@ -89,20 +89,63 @@ def process_submission(db: Session, submission_id: int):
                 pass
 
         # Run Container
+        # GPU support: increase memory limit for GPU workloads
+        # Adjust mem_limit based on your needs (e.g., "4g" for GPU tasks, "512m" for CPU tasks)
         container = docker_client.containers.run(
             image=problem.docker_image,
             command=run_command,
             volumes=volumes,
             detach=True,
-            mem_limit="512m",  # Limit memory
-            cpu_quota=50000,  # Limit CPU (0.5 CPU)
-            network_disabled=True,
+            mem_limit="4g",  # 限制内存（GPU任务需要更多内存）
+            memswap_limit="4g",  # 禁用 swap
+            cpu_quota=100000,  # 限制 CPU (1.0 CPU, GPU任务可能需要更多CPU)
+            cpu_period=100000,
+            network_disabled=False,  # GPU 驱动可能需要网络访问（可根据需要禁用）
+            read_only=False,  # 允许写入（测试需要）
+            cap_drop=["ALL"],  # 移除所有 capabilities
+            security_opt=["no-new-privileges"],  # 防止提权
+            pids_limit=200,  # 限制进程数（GPU程序可能需要更多进程）
+            device_requests=[
+                docker.types.DeviceRequest(count=-1, capabilities=[["gpu"]])
+            ],  # 启用 GPU 支持（所有GPU）
             labels={"leaderboard_submission_id": str(submission_id)},
         )
 
-        # Wait for finish
-        result = container.wait(timeout=300)  # 5 minutes timeout
-        exit_code = result["StatusCode"]
+        # Wait for finish with timeout
+        try:
+            result = container.wait(timeout=480)  # 8 分钟超时
+            exit_code = result["StatusCode"]
+        except Exception as e:
+            print(f"Container timeout or error for submission {submission_id}: {e}")
+            # Kill the container
+            try:
+                container.kill()
+            except:
+                pass
+            exit_code = -1
+            logs = f"Container execution timeout (>480s) or error: {str(e)}"
+
+            # Remove container
+            try:
+                container.remove(force=True)
+            except:
+                pass
+
+            # Write error log
+            log_filename = f"{submission.id}_{int(time.time())}.log"
+            log_path_container = os.path.join(settings.LOG_DIR, log_filename)
+            with open(log_path_container, "w") as f:
+                f.write(f"Exit Code: {exit_code}\n")
+                f.write("-" * 20 + "\n")
+                f.write(logs)
+
+            submission.status = "Failed"
+            submission.score = 0.0
+            submission.log_path = log_path_container
+            submission.finished_at = datetime.utcnow()
+            db.commit()
+            print(f"Submission {submission_id} timeout/error handled")
+            return
 
         # Get Logs
         logs = container.logs(stdout=True, stderr=True).decode("utf-8", errors="ignore")
@@ -127,12 +170,23 @@ def process_submission(db: Session, submission_id: int):
                 pass
         elif exit_code == 0:
             score = (
-                100.0  # Default full score if success and no score printed? Or maybe 0.
+                0.0  # Default full score if success and no score printed? Or maybe 0.
             )
+
+        # Parse Performance (if enabled for this problem)
+        performance = None
+        if problem.performance_enabled:
+            performance_match = re.search(r"PERFORMANCE:\s*([\d\.]+)", logs)
+            if performance_match:
+                try:
+                    performance = float(performance_match.group(1))
+                except:
+                    pass
 
         # Update DB
         submission.status = "Success" if exit_code == 0 else "Failed"
         submission.score = score
+        submission.performance = performance
         submission.log_path = log_path_container
         submission.finished_at = datetime.utcnow()
         db.commit()
