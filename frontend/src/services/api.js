@@ -31,4 +31,31 @@ api.interceptors.response.use(
   }
 );
 
+export const downloadLog = async (submissionId) => {
+  const response = await api.get(`/submissions/${submissionId}/log/download`, {
+    responseType: 'blob',
+  });
+  
+  // Create a link to download the blob
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  
+  // Extract filename from header if possible, or default
+  const contentDisposition = response.headers['content-disposition'];
+  let filename = `submission_${submissionId}.log`;
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+    if (filenameMatch && filenameMatch.length === 2) {
+      filename = filenameMatch[1];
+    }
+  }
+  
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
 export default api;

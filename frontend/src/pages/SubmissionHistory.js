@@ -9,9 +9,11 @@ import {
   Space,
   Popconfirm,
   message,
+  Tooltip,
 } from "antd";
-import api from "../services/api";
+import api, { downloadLog } from "../services/api";
 import { AuthContext } from "../context/AuthContext";
+import { DownloadOutlined } from "@ant-design/icons";
 
 const { Option } = Select;
 
@@ -25,6 +27,7 @@ const SubmissionHistory = ({
   const [loading, setLoading] = useState(false);
   const [logModalOpen, setLogModalOpen] = useState(false);
   const [currentLog, setCurrentLog] = useState("");
+  const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
 
   // Filters
   const [viewAll, setViewAll] = useState(false);
@@ -74,6 +77,7 @@ const SubmissionHistory = ({
   }, [fetchSubmissions]);
 
   const showLog = async (id) => {
+    setCurrentSubmissionId(id);
     try {
       const res = await api.get(`/submissions/${id}/log`);
       setCurrentLog(res.data.log);
@@ -81,6 +85,14 @@ const SubmissionHistory = ({
     } catch (error) {
       setCurrentLog("Log unavailable.");
       setLogModalOpen(true);
+    }
+  };
+
+  const handleDownloadLog = async (id) => {
+    try {
+      await downloadLog(id);
+    } catch (error) {
+      message.error("Failed to download log.");
     }
   };
 
@@ -151,6 +163,13 @@ const SubmissionHistory = ({
             <Button size="small" onClick={() => showLog(record.id)}>
               View Log
             </Button>
+            <Tooltip title="Download Log">
+              <Button 
+                size="small" 
+                icon={<DownloadOutlined />} 
+                onClick={() => handleDownloadLog(record.id)} 
+              />
+            </Tooltip>
             {canCancel && (
               <Popconfirm
                 title="Cancel this submission?"
@@ -250,6 +269,9 @@ const SubmissionHistory = ({
         onCancel={() => setLogModalOpen(false)}
         width={800}
         footer={[
+          <Button key="download" icon={<DownloadOutlined />} onClick={() => handleDownloadLog(currentSubmissionId)}>
+            Download Log
+          </Button>,
           <Button key="close" onClick={() => setLogModalOpen(false)}>
             Close
           </Button>,

@@ -11,6 +11,7 @@ from app.api import deps
 from app.core.config import settings
 from app.core.database import get_db
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -259,6 +260,36 @@ def get_submission_log(
         content = f.read()
 
     return {"log": content}
+
+
+@router.get("/{submission_id}/log/download")
+def download_submission_log(
+    submission_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_active_user),
+):
+    """
+    Download the log file for a submission.
+    """
+    submission = (
+        db.query(models.Submission)
+        .filter(models.Submission.id == submission_id)
+        .first()
+    )
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    if not current_user.is_admin and submission.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    if not submission.log_path or not os.path.exists(submission.log_path):
+        raise HTTPException(status_code=404, detail="Log file not found")
+
+    return FileResponse(
+        path=submission.log_path,
+        filename=f"submission_{submission_id}.log",
+        media_type="text/plain",
+    )
 
 
 @router.delete("/{submission_id}")
