@@ -153,12 +153,6 @@ def process_submission(db: Session, submission_id: int):
         # Remove container
         container.remove(force=True)
 
-        # Write Logs to File
-        with open(log_path_container, "w") as f:
-            f.write(f"Exit Code: {exit_code}\n")
-            f.write("-" * 20 + "\n")
-            f.write(logs)
-
         # Parse Score
         # Simple Logic: Look for "SCORE: <float>"
         score = 0.0
@@ -182,6 +176,16 @@ def process_submission(db: Session, submission_id: int):
                     performance = float(performance_match.group(1))
                 except:
                     pass
+
+        # Remove SCORE and PERFORMANCE from logs to prevent cheating
+        logs = re.sub(r"SCORE:.*(\n|$)", "", logs)
+        logs = re.sub(r"PERFORMANCE:.*(\n|$)", "", logs)
+
+        # Write Logs to File
+        with open(log_path_container, "w") as f:
+            f.write(f"Exit Code: {exit_code}\n")
+            f.write("-" * 20 + "\n")
+            f.write(logs)
 
         # Update DB
         submission.status = "Success" if exit_code == 0 else "Failed"
