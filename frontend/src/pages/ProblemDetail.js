@@ -18,6 +18,8 @@ import {
   FilePdfOutlined,
   DownloadOutlined,
   PaperClipOutlined,
+  UpOutlined,
+  DownOutlined,
 } from "@ant-design/icons";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -39,6 +41,7 @@ const ProblemDetail = () => {
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(true);
 
   useEffect(() => {
     fetchProblem();
@@ -129,67 +132,82 @@ const ProblemDetail = () => {
       <Title level={2}>{problem.title}</Title>
 
       <div style={{ display: "flex", gap: "20px", flexDirection: "column" }}>
-        <Card title="Problem Description">
-          {/* In a real app, description might be fetched from a markdown file URL */}
-          <div className="markdown-body">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm, remarkMath]}
-              rehypePlugins={[rehypeRaw, rehypeKatex]}
-              components={{
-                code({ node, inline, className, children, ...props }) {
-                  const match = /language-(\w+)/.exec(className || "");
-                  return !inline && match ? (
-                    <SyntaxHighlighter
-                      style={ghcolors}
-                      language={match[1]}
-                      PreTag="div"
-                      {...props}
-                    >
-                      {String(children).replace(/\n$/, "")}
-                    </SyntaxHighlighter>
-                  ) : (
-                    <code className={className} {...props}>
-                      {children}
-                    </code>
-                  );
-                },
-              }}
+        <Card
+          title="Problem Description"
+          extra={
+            <Button
+              type="text"
+              icon={descriptionExpanded ? <UpOutlined /> : <DownOutlined />}
+              onClick={() => setDescriptionExpanded(!descriptionExpanded)}
             >
-              {problem.description || "No description provided."}
-            </ReactMarkdown>
-          </div>
-
-          {attachments.length > 0 && (
+              {descriptionExpanded ? "Collapse" : "Expand"}
+            </Button>
+          }
+        >
+          {descriptionExpanded && (
             <>
-              <Divider />
-              <div style={{ marginTop: 16 }}>
-                <Typography.Title level={5} style={{ marginBottom: 12 }}>
-                  <PaperClipOutlined /> Attachments
-                </Typography.Title>
-                <List
-                  size="small"
-                  bordered
-                  dataSource={attachments}
-                  renderItem={(item) => (
-                    <List.Item
-                      actions={[
-                        <Button
-                          type="link"
-                          icon={<DownloadOutlined />}
-                          onClick={() => downloadAttachment(item.filename)}
+              {/* In a real app, description might be fetched from a markdown file URL */}
+              <div className="markdown-body">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeRaw, rehypeKatex]}
+                  components={{
+                    code({ node, inline, className, children, ...props }) {
+                      const match = /language-(\w+)/.exec(className || "");
+                      return !inline && match ? (
+                        <SyntaxHighlighter
+                          style={ghcolors}
+                          language={match[1]}
+                          PreTag="div"
+                          {...props}
                         >
-                          Download
-                        </Button>,
-                      ]}
-                    >
-                      <Space>
-                        <PaperClipOutlined />
-                        <span>{item.filename}</span>
-                      </Space>
-                    </List.Item>
-                  )}
-                />
+                          {String(children).replace(/\n$/, "")}
+                        </SyntaxHighlighter>
+                      ) : (
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      );
+                    },
+                  }}
+                >
+                  {problem.description || "No description provided."}
+                </ReactMarkdown>
               </div>
+
+              {attachments.length > 0 && (
+                <>
+                  <Divider />
+                  <div style={{ marginTop: 16 }}>
+                    <Typography.Title level={5} style={{ marginBottom: 12 }}>
+                      <PaperClipOutlined /> Attachments
+                    </Typography.Title>
+                    <List
+                      size="small"
+                      bordered
+                      dataSource={attachments}
+                      renderItem={(item) => (
+                        <List.Item
+                          actions={[
+                            <Button
+                              type="link"
+                              icon={<DownloadOutlined />}
+                              onClick={() => downloadAttachment(item.filename)}
+                            >
+                              Download
+                            </Button>,
+                          ]}
+                        >
+                          <Space>
+                            <PaperClipOutlined />
+                            <span>{item.filename}</span>
+                          </Space>
+                        </List.Item>
+                      )}
+                    />
+                  </div>
+                </>
+              )}
             </>
           )}
         </Card>
