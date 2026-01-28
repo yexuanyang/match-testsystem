@@ -25,37 +25,40 @@ const Login = () => {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5' }}>
-      <Card style={{ width: 400 }}>
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <Title level={3}>Test System Login</Title>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Card style={{ width: 400, border: '1px solid var(--primary-color)', boxShadow: '0 0 20px rgba(0, 240, 255, 0.2)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 30 }}>
+          <Title level={3} style={{ fontFamily: "'Orbitron', sans-serif", letterSpacing: '2px', color: 'var(--primary-color)', margin: 0 }}>SYSTEM ACCESS</Title>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '5px' }}>Identify yourself</div>
         </div>
         <Form
           name="normal_login"
           className="login-form"
           initialValues={{ remember: true }}
           onFinish={onFinish}
+          size="large"
         >
           <Form.Item
             name="username"
             rules={[{ required: true, message: 'Please input your Username!' }]}
           >
-            <Input prefix={<UserOutlined className="site-form-item-icon" />} placeholder="Username" />
+            <Input prefix={<UserOutlined style={{ color: 'var(--primary-color)' }} />} placeholder="Username" style={{ background: 'rgba(0,0,0,0.3)', borderColor: 'var(--border-color)', color: 'white' }} />
           </Form.Item>
           <Form.Item
             name="password"
             rules={[{ required: true, message: 'Please input your Password!' }]}
           >
             <Input
-              prefix={<LockOutlined className="site-form-item-icon" />}
+              prefix={<LockOutlined style={{ color: 'var(--primary-color)' }} />}
               type="password"
               placeholder="Password"
+              style={{ background: 'rgba(0,0,0,0.3)', borderColor: 'var(--border-color)', color: 'white' }}
             />
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" className="login-form-button" block loading={loading}>
-              Log in
+            <Button type="primary" htmlType="submit" className="login-form-button" block loading={loading} style={{ height: '45px', fontSize: '1rem' }}>
+              INITIATE SESSION
             </Button>
           </Form.Item>
         </Form>

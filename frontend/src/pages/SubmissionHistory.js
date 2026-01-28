@@ -228,12 +228,14 @@ const SubmissionHistory = ({
 
           <Select
             defaultValue="desc"
-            style={{ width: 120 }}
+            style={{ width: 140 }}
             onChange={setSortOrder}
             value={sortOrder}
           >
             <Option value="desc">Newest First</Option>
             <Option value="asc">Oldest First</Option>
+            <Option value="score_desc">Highest Score</Option>
+            <Option value="score_asc">Lowest Score</Option>
           </Select>
 
           {!problemId && (
@@ -263,17 +265,17 @@ const SubmissionHistory = ({
       />
 
       <Modal
-        title="Execution Log"
+        title={<span style={{ fontFamily: "'Orbitron', sans-serif" }}>EXECUTION LOG</span>}
         open={logModalOpen}
         onOk={() => setLogModalOpen(false)}
         onCancel={() => setLogModalOpen(false)}
         width={800}
         footer={[
-          <Button key="download" icon={<DownloadOutlined />} onClick={() => handleDownloadLog(currentSubmissionId)}>
-            Download Log
+          <Button key="download" icon={<DownloadOutlined />} onClick={() => handleDownloadLog(currentSubmissionId)} style={{ color: 'var(--primary-color)', borderColor: 'var(--primary-color)', background: 'transparent' }}>
+            DOWNLOAD LOG
           </Button>,
           <Button key="close" onClick={() => setLogModalOpen(false)}>
-            Close
+            CLOSE
           </Button>,
         ]}
       >
@@ -281,8 +283,12 @@ const SubmissionHistory = ({
           style={{
             maxHeight: "400px",
             overflow: "auto",
-            backgroundColor: "#f5f5f5",
-            padding: "10px",
+            backgroundColor: "#0d1117",
+            padding: "15px",
+            color: "#e0e0e0",
+            fontFamily: "'Share Tech Mono', monospace",
+            border: "1px solid var(--border-color)",
+            borderRadius: "4px",
           }}
         >
           {currentLog}

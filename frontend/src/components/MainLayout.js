@@ -10,9 +10,9 @@ const MainLayout = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
-  const {
-    token: { colorBgContainer },
-  } = theme.useToken();
+  
+  // We rely on global.css and ConfigProvider for colors now
+  // but we can still access tokens if needed.
 
   const handleLogout = () => {
     logout();
@@ -42,32 +42,42 @@ const MainLayout = () => {
 
   return (
     <Layout className="layout" style={{ minHeight: '100vh' }}>
-      <Header style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ color: 'white', fontWeight: 'bold', fontSize: '1.2rem', marginRight: '40px' }}>
-          Test System
+      <Header style={{ display: 'flex', alignItems: 'center', padding: '0 50px' }}>
+        <div style={{ 
+          color: '#00f0ff', 
+          fontWeight: 'bold', 
+          fontSize: '1.5rem', 
+          marginRight: '40px',
+          fontFamily: "'Orbitron', sans-serif",
+          textShadow: '0 0 10px rgba(0, 240, 255, 0.5)',
+          letterSpacing: '2px'
+        }}>
+          LEADERBOARD
         </div>
         <Menu
           theme="dark"
           mode="horizontal"
           selectedKeys={[location.pathname]}
           items={menuItems}
-          style={{ flex: 1, minWidth: 0 }}
+          style={{ flex: 1, minWidth: 0, borderBottom: 'none' }}
         />
         {user && (
-          <div style={{ color: 'white' }}>
-            <span style={{ marginRight: '15px' }}>Hi, {user.username}</span>
-            <Button type="primary" danger icon={<LogoutOutlined />} onClick={handleLogout} size="small">
+          <div style={{ color: 'var(--text-primary)' }}>
+            <span style={{ marginRight: '15px', fontFamily: "'Rajdhani', sans-serif", fontWeight: 500 }}>Hi, {user.username}</span>
+            <Button type="primary" danger icon={<LogoutOutlined />} onClick={handleLogout} size="small" style={{ borderRadius: '0' }}>
               Logout
             </Button>
           </div>
         )}
       </Header>
       <Content style={{ padding: '0 50px' }}>
-        <div className="site-layout-content" style={{ marginTop: '24px', padding: 24, minHeight: 380, background: colorBgContainer }}>
+        <div className="site-layout-content" style={{ marginTop: '24px', padding: 24, minHeight: 380 }}>
           <Outlet />
         </div>
       </Content>
-      <Footer style={{ textAlign: 'center' }}>Test System ©2024</Footer>
+      <Footer style={{ textAlign: 'center', background: 'transparent', color: 'var(--text-secondary)' }}>
+        Test System Leaderboard ©2026 | Designed for Performance
+      </Footer>
     </Layout>
   );
 };

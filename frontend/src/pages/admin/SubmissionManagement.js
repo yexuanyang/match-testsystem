@@ -112,6 +112,12 @@ const SubmissionManagement = () => {
       },
     },
     {
+      title: "Score",
+      dataIndex: "score",
+      key: "score",
+      render: (score) => (score !== null && score !== undefined ? score : "-"),
+    },
+    {
       title: "Submitted",
       dataIndex: "submitted_at",
       key: "submitted_at",
@@ -159,10 +165,12 @@ const SubmissionManagement = () => {
             <Select
               value={sortOrder}
               onChange={setSortOrder}
-              style={{ width: 120 }}
+              style={{ width: 140 }}
             >
               <Option value="desc">Newest First</Option>
               <Option value="asc">Oldest First</Option>
+              <Option value="score_desc">Highest Score</Option>
+              <Option value="score_asc">Lowest Score</Option>
             </Select>
           </Col>
           <Col>

@@ -59,12 +59,18 @@ const ProblemList = () => {
 
   return (
     <div>
-      <Title level={2}>Problems</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <Title level={2} style={{ margin: 0 }}>AVAILABLE CHALLENGES</Title>
+        <div style={{ color: 'var(--primary-color)', fontFamily: "'Orbitron', sans-serif" }}>
+          STATUS: ONLINE
+        </div>
+      </div>
       <Table
         columns={columns}
         dataSource={problems}
         rowKey="id"
         loading={loading}
+        pagination={{ pageSize: 10 }}
       />
     </div>
   );

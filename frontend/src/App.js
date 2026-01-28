@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { ConfigProvider, theme } from "antd";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
 import MainLayout from "./components/MainLayout";
 import Login from "./pages/Login";
@@ -54,11 +55,24 @@ const AppRoutes = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </AuthProvider>
+    <ConfigProvider
+      theme={{
+        algorithm: theme.darkAlgorithm,
+        token: {
+          colorPrimary: "#00f0ff",
+          colorBgBase: "#050510",
+          colorBgContainer: "#1e1e32",
+          fontFamily: "'Rajdhani', sans-serif",
+          borderRadius: 2,
+        },
+      }}
+    >
+      <AuthProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </AuthProvider>
+    </ConfigProvider>
   );
 };
 
