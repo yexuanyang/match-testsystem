@@ -25,7 +25,7 @@ const AdminPanel = () => {
 
   return (
     <div>
-      <h2>Admin Control Panel</h2>
+      <h2 style={{ marginBottom: "20px" }}>Admin Control Panel</h2>
       <Tabs defaultActiveKey="1" items={items} destroyInactiveTabPane />
     </div>
   );

@@ -64,6 +64,10 @@ def read_submissions(
 
     if sort_order == "asc":
         query = query.order_by(models.Submission.submitted_at.asc())
+    elif sort_order == "score_desc":
+        query = query.order_by(models.Submission.score.desc())
+    elif sort_order == "score_asc":
+        query = query.order_by(models.Submission.score.asc())
     else:
         query = query.order_by(models.Submission.submitted_at.desc())
 

@@ -228,12 +228,14 @@ const SubmissionHistory = ({
 
           <Select
             defaultValue="desc"
-            style={{ width: 120 }}
+            style={{ width: 140 }}
             onChange={setSortOrder}
             value={sortOrder}
           >
             <Option value="desc">Newest First</Option>
             <Option value="asc">Oldest First</Option>
+            <Option value="score_desc">Highest Score</Option>
+            <Option value="score_asc">Lowest Score</Option>
           </Select>
 
           {!problemId && (
@@ -281,8 +283,12 @@ const SubmissionHistory = ({
           style={{
             maxHeight: "400px",
             overflow: "auto",
-            backgroundColor: "#f5f5f5",
-            padding: "10px",
+            backgroundColor: "#0d1117",
+            padding: "15px",
+            color: "#e6edf3",
+            fontFamily: "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace",
+            border: "1px solid var(--border-color)",
+            borderRadius: "4px",
           }}
         >
           {currentLog}

@@ -1,41 +1,51 @@
-/* Markdown 渲染样式 */
+/* Markdown Render Styles - Dark Mode Adapted */
 
-/* 表格样式 */
+.markdown-body {
+  color: var(--text-primary);
+  font-family: 'Rajdhani', sans-serif;
+  line-height: 1.6;
+}
+
+/* Table Styles */
 .markdown-body table {
   border-collapse: collapse;
   width: 100%;
   margin: 16px 0;
   overflow: auto;
+  color: var(--text-primary);
 }
 
 .markdown-body table th,
 .markdown-body table td {
-  padding: 8px 13px;
-  border: 1px solid #d0d7de;
+  padding: 10px 15px;
+  border: 1px solid var(--border-color);
 }
 
 .markdown-body table th {
   font-weight: 600;
-  background-color: #f6f8fa;
+  background-color: rgba(0, 240, 255, 0.1);
+  color: var(--primary-color);
+  font-family: 'Orbitron', sans-serif;
 }
 
 .markdown-body table tr {
-  background-color: #ffffff;
-  border-top: 1px solid #d0d7de;
+  background-color: transparent;
+  border-top: 1px solid var(--border-color);
 }
 
 .markdown-body table tr:nth-child(2n) {
-  background-color: #f6f8fa;
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
-/* 代码块样式增强 */
+/* Code Blocks */
 .markdown-body pre {
   margin: 16px 0;
   padding: 16px;
   overflow: auto;
   font-size: 85%;
   line-height: 1.45;
-  background-color: #f6f8fa;
+  background-color: #0d1117;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 }
 
@@ -43,11 +53,13 @@
   padding: 0.2em 0.4em;
   margin: 0;
   font-size: 85%;
-  background-color: rgba(175, 184, 193, 0.2);
+  background-color: rgba(0, 240, 255, 0.1);
+  color: var(--primary-color);
   border-radius: 6px;
+  font-family: 'Share Tech Mono', monospace;
 }
 
-/* 标题样式 */
+/* Headings */
 .markdown-body h1,
 .markdown-body h2,
 .markdown-body h3,
@@ -58,31 +70,36 @@
   margin-bottom: 16px;
   font-weight: 600;
   line-height: 1.25;
+  color: var(--primary-color);
+  font-family: 'Orbitron', sans-serif;
 }
 
 .markdown-body h1 {
   font-size: 2em;
-  border-bottom: 1px solid #d0d7de;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.3em;
 }
 
 .markdown-body h2 {
   font-size: 1.5em;
-  border-bottom: 1px solid #d0d7de;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.3em;
 }
 
-/* 链接样式 */
+/* Links */
 .markdown-body a {
-  color: #0969da;
+  color: var(--primary-color);
   text-decoration: none;
+  transition: all 0.3s;
 }
 
 .markdown-body a:hover {
   text-decoration: underline;
+  color: var(--secondary-color);
+  text-shadow: 0 0 5px var(--secondary-color);
 }
 
-/* 列表样式 */
+/* Lists */
 .markdown-body ul,
 .markdown-body ol {
   padding-left: 2em;
@@ -90,22 +107,26 @@
   margin-bottom: 16px;
 }
 
-/* 引用块样式 */
+/* Blockquotes */
 .markdown-body blockquote {
   padding: 0 1em;
-  color: #57606a;
-  border-left: 0.25em solid #d0d7de;
+  color: var(--text-secondary);
+  border-left: 0.25em solid var(--primary-color);
   margin: 0 0 16px 0;
+  background: rgba(0, 240, 255, 0.05);
+  font-style: italic;
 }
 
-/* 图片样式 */
+/* Images */
 .markdown-body img {
   max-width: 100%;
   box-sizing: content-box;
-  background-color: #ffffff;
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
 }
 
-/* 上标和下标样式 */
+/* Sup/Sub */
 .markdown-body sub,
 .markdown-body sup {
   font-size: 75%;
@@ -122,11 +143,11 @@
   top: -0.5em;
 }
 
-/* EasyMDE Fullscreen Fixes */
+/* Editor Fixes (if used) */
 .editor-toolbar.fullscreen {
-  z-index: 1100 !important; /* Higher than Ant Design Modals (1000) */
-  background: white;
-  border-bottom: 1px solid #ddd;
+  z-index: 1100 !important;
+  background: var(--bg-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .CodeMirror-fullscreen {
@@ -135,4 +156,6 @@
 
 .editor-preview-side.editor-preview-active-side {
   z-index: 1101 !important;
+  background: var(--bg-color);
+  color: var(--text-primary);
 }

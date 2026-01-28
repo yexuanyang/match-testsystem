@@ -28,7 +28,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { ghcolors } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import api from "../services/api";
 
 import SubmissionHistory from "./SubmissionHistory";
@@ -129,7 +129,10 @@ const ProblemDetail = () => {
 
   return (
     <div>
-      <Title level={2}>{problem.title}</Title>
+      <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', marginBottom: '20px' }}>
+        <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Problem ID: {problem.id}</div>
+        <Title level={2} style={{ margin: 0 }}>{problem.title}</Title>
+      </div>
 
       <div style={{ display: "flex", gap: "20px", flexDirection: "column" }}>
         <Card
@@ -156,7 +159,7 @@ const ProblemDetail = () => {
                       const match = /language-(\w+)/.exec(className || "");
                       return !inline && match ? (
                         <SyntaxHighlighter
-                          style={ghcolors}
+                          style={vscDarkPlus}
                           language={match[1]}
                           PreTag="div"
                           {...props}
@@ -259,7 +262,7 @@ const ProblemDetail = () => {
           </Form>
         </Card>
 
-        <Card title="Recent Submissions for this Problem">
+        <Card title="Recent Submissions">
           <SubmissionHistory problemId={id} limit={5} showPagination={false} />
         </Card>
       </div>
