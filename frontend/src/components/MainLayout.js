@@ -42,29 +42,27 @@ const MainLayout = () => {
 
   return (
     <Layout className="layout" style={{ minHeight: '100vh' }}>
-      <Header style={{ display: 'flex', alignItems: 'center', padding: '0 50px' }}>
+      <Header style={{ display: 'flex', alignItems: 'center', padding: '0 50px', borderBottom: '1px solid #30363d' }}>
         <div style={{ 
-          color: '#00f0ff', 
-          fontWeight: 'bold', 
-          fontSize: '1.5rem', 
+          color: '#e6edf3', 
+          fontWeight: '600', 
+          fontSize: '1.2rem', 
           marginRight: '40px',
-          fontFamily: "'Orbitron', sans-serif",
-          textShadow: '0 0 10px rgba(0, 240, 255, 0.5)',
-          letterSpacing: '2px'
+          letterSpacing: '-0.5px'
         }}>
-          LEADERBOARD
+          Leaderboard
         </div>
         <Menu
           theme="dark"
           mode="horizontal"
           selectedKeys={[location.pathname]}
           items={menuItems}
-          style={{ flex: 1, minWidth: 0, borderBottom: 'none' }}
+          style={{ flex: 1, minWidth: 0, borderBottom: 'none', background: 'transparent' }}
         />
         {user && (
           <div style={{ color: 'var(--text-primary)' }}>
-            <span style={{ marginRight: '15px', fontFamily: "'Rajdhani', sans-serif", fontWeight: 500 }}>Hi, {user.username}</span>
-            <Button type="primary" danger icon={<LogoutOutlined />} onClick={handleLogout} size="small" style={{ borderRadius: '0' }}>
+            <span style={{ marginRight: '15px', fontWeight: 500 }}>{user.username}</span>
+            <Button type="text" danger icon={<LogoutOutlined />} onClick={handleLogout} size="small">
               Logout
             </Button>
           </div>
@@ -76,7 +74,7 @@ const MainLayout = () => {
         </div>
       </Content>
       <Footer style={{ textAlign: 'center', background: 'transparent', color: 'var(--text-secondary)' }}>
-        Test System Leaderboard ©2026 | Designed for Performance
+        Test System ©2026
       </Footer>
     </Layout>
   );

@@ -59,11 +59,21 @@ const App = () => {
       theme={{
         algorithm: theme.darkAlgorithm,
         token: {
-          colorPrimary: "#00f0ff",
-          colorBgBase: "#050510",
-          colorBgContainer: "#1e1e32",
-          fontFamily: "'Rajdhani', sans-serif",
-          borderRadius: 2,
+          colorPrimary: "#2f81f7",
+          colorBgBase: "#0d1117",
+          colorBgContainer: "#161b22",
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+          borderRadius: 6,
+          colorLink: "#2f81f7",
+        },
+        components: {
+          Layout: {
+            headerBg: "#161b22",
+            bodyBg: "#0d1117",
+          },
+          Card: {
+            colorBorderSecondary: "#30363d",
+          },
         },
       }}
     >

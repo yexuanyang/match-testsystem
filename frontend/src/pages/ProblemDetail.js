@@ -129,22 +129,21 @@ const ProblemDetail = () => {
 
   return (
     <div>
-      <div style={{ borderBottom: '1px solid var(--primary-color)', paddingBottom: '10px', marginBottom: '20px' }}>
-        <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontFamily: "'Orbitron', sans-serif" }}>PROBLEM ID: {problem.id}</div>
-        <Title level={2} style={{ margin: 0, textTransform: 'uppercase' }}>{problem.title}</Title>
+      <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', marginBottom: '20px' }}>
+        <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Problem ID: {problem.id}</div>
+        <Title level={2} style={{ margin: 0 }}>{problem.title}</Title>
       </div>
 
       <div style={{ display: "flex", gap: "20px", flexDirection: "column" }}>
         <Card
-          title={<span style={{ fontFamily: "'Orbitron', sans-serif" }}>PROBLEM DATA</span>}
+          title="Problem Description"
           extra={
             <Button
               type="text"
               icon={descriptionExpanded ? <UpOutlined /> : <DownOutlined />}
               onClick={() => setDescriptionExpanded(!descriptionExpanded)}
-              style={{ color: 'var(--primary-color)' }}
             >
-              {descriptionExpanded ? "COLLAPSE" : "EXPAND"}
+              {descriptionExpanded ? "Collapse" : "Expand"}
             </Button>
           }
         >
@@ -181,19 +180,17 @@ const ProblemDetail = () => {
 
               {attachments.length > 0 && (
                 <>
-                  <Divider style={{ borderColor: 'var(--border-color)' }} />
+                  <Divider />
                   <div style={{ marginTop: 16 }}>
-                    <Typography.Title level={5} style={{ marginBottom: 12, fontFamily: "'Orbitron', sans-serif" }}>
-                      <PaperClipOutlined /> ATTACHMENTS
+                    <Typography.Title level={5} style={{ marginBottom: 12 }}>
+                      <PaperClipOutlined /> Attachments
                     </Typography.Title>
                     <List
                       size="small"
                       bordered
                       dataSource={attachments}
-                      style={{ borderColor: 'var(--border-color)' }}
                       renderItem={(item) => (
                         <List.Item
-                          style={{ borderBottom: '1px solid var(--border-color)' }}
                           actions={[
                             <Button
                               type="link"
@@ -205,7 +202,7 @@ const ProblemDetail = () => {
                           ]}
                         >
                           <Space>
-                            <PaperClipOutlined style={{ color: 'var(--primary-color)' }} />
+                            <PaperClipOutlined />
                             <span>{item.filename}</span>
                           </Space>
                         </List.Item>
@@ -218,11 +215,11 @@ const ProblemDetail = () => {
           )}
         </Card>
 
-        <Card title={<span style={{ fontFamily: "'Orbitron', sans-serif" }}>SUBMIT SOLUTION</span>}>
+        <Card title="Submit Solution">
           <Form name="submission_form" onFinish={onFinish} layout="vertical">
             <Form.Item
               name="answer"
-              label={<span style={{ color: 'var(--text-primary)' }}>Answer File (ZIP)</span>}
+              label="Answer File (ZIP)"
               valuePropName="fileList"
               getValueFromEvent={normFile}
               rules={[
@@ -233,13 +230,13 @@ const ProblemDetail = () => {
               ]}
             >
               <Upload beforeUpload={() => false} maxCount={1} accept=".zip">
-                <Button icon={<FileZipOutlined />} style={{ background: 'transparent', borderColor: 'var(--primary-color)', color: 'var(--primary-color)' }}>Select ZIP File</Button>
+                <Button icon={<FileZipOutlined />}>Select ZIP File</Button>
               </Upload>
             </Form.Item>
 
             <Form.Item
               name="report"
-              label={<span style={{ color: 'var(--text-primary)' }}>Report (PDF/DOC) - Optional</span>}
+              label="Report (PDF/DOC) - Optional"
               valuePropName="fileList"
               getValueFromEvent={normFile}
             >
@@ -248,7 +245,7 @@ const ProblemDetail = () => {
                 maxCount={1}
                 accept=".pdf,.doc,.docx"
               >
-                <Button icon={<FilePdfOutlined />} style={{ background: 'transparent', borderColor: 'var(--primary-color)', color: 'var(--primary-color)' }}>Select Report</Button>
+                <Button icon={<FilePdfOutlined />}>Select Report</Button>
               </Upload>
             </Form.Item>
 
@@ -258,16 +255,14 @@ const ProblemDetail = () => {
                 htmlType="submit"
                 loading={submitting}
                 icon={<UploadOutlined />}
-                block
-                style={{ height: '40px', fontSize: '1rem' }}
               >
-                INITIATE UPLOAD
+                Submit
               </Button>
             </Form.Item>
           </Form>
         </Card>
 
-        <Card title={<span style={{ fontFamily: "'Orbitron', sans-serif" }}>RECENT TRANSMISSIONS</span>}>
+        <Card title="Recent Submissions">
           <SubmissionHistory problemId={id} limit={5} showPagination={false} />
         </Card>
       </div>

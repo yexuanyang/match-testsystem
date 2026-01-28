@@ -265,17 +265,17 @@ const SubmissionHistory = ({
       />
 
       <Modal
-        title={<span style={{ fontFamily: "'Orbitron', sans-serif" }}>EXECUTION LOG</span>}
+        title="Execution Log"
         open={logModalOpen}
         onOk={() => setLogModalOpen(false)}
         onCancel={() => setLogModalOpen(false)}
         width={800}
         footer={[
-          <Button key="download" icon={<DownloadOutlined />} onClick={() => handleDownloadLog(currentSubmissionId)} style={{ color: 'var(--primary-color)', borderColor: 'var(--primary-color)', background: 'transparent' }}>
-            DOWNLOAD LOG
+          <Button key="download" icon={<DownloadOutlined />} onClick={() => handleDownloadLog(currentSubmissionId)}>
+            Download Log
           </Button>,
           <Button key="close" onClick={() => setLogModalOpen(false)}>
-            CLOSE
+            Close
           </Button>,
         ]}
       >
@@ -285,8 +285,8 @@ const SubmissionHistory = ({
             overflow: "auto",
             backgroundColor: "#0d1117",
             padding: "15px",
-            color: "#e0e0e0",
-            fontFamily: "'Share Tech Mono', monospace",
+            color: "#e6edf3",
+            fontFamily: "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace",
             border: "1px solid var(--border-color)",
             borderRadius: "4px",
           }}

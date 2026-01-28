@@ -60,10 +60,7 @@ const ProblemList = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <Title level={2} style={{ margin: 0 }}>AVAILABLE CHALLENGES</Title>
-        <div style={{ color: 'var(--primary-color)', fontFamily: "'Orbitron', sans-serif" }}>
-          STATUS: ONLINE
-        </div>
+        <Title level={2} style={{ margin: 0 }}>Problems</Title>
       </div>
       <Table
         columns={columns}

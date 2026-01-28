@@ -26,10 +26,9 @@ const Login = () => {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <Card style={{ width: 400, border: '1px solid var(--primary-color)', boxShadow: '0 0 20px rgba(0, 240, 255, 0.2)' }}>
-        <div style={{ textAlign: 'center', marginBottom: 30 }}>
-          <Title level={3} style={{ fontFamily: "'Orbitron', sans-serif", letterSpacing: '2px', color: 'var(--primary-color)', margin: 0 }}>SYSTEM ACCESS</Title>
-          <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '5px' }}>Identify yourself</div>
+      <Card style={{ width: 400, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <Title level={3} style={{ margin: 0 }}>Log In</Title>
         </div>
         <Form
           name="normal_login"
@@ -42,23 +41,22 @@ const Login = () => {
             name="username"
             rules={[{ required: true, message: 'Please input your Username!' }]}
           >
-            <Input prefix={<UserOutlined style={{ color: 'var(--primary-color)' }} />} placeholder="Username" style={{ background: 'rgba(0,0,0,0.3)', borderColor: 'var(--border-color)', color: 'white' }} />
+            <Input prefix={<UserOutlined />} placeholder="Username" />
           </Form.Item>
           <Form.Item
             name="password"
             rules={[{ required: true, message: 'Please input your Password!' }]}
           >
             <Input
-              prefix={<LockOutlined style={{ color: 'var(--primary-color)' }} />}
+              prefix={<LockOutlined />}
               type="password"
               placeholder="Password"
-              style={{ background: 'rgba(0,0,0,0.3)', borderColor: 'var(--border-color)', color: 'white' }}
             />
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" className="login-form-button" block loading={loading} style={{ height: '45px', fontSize: '1rem' }}>
-              INITIATE SESSION
+            <Button type="primary" htmlType="submit" className="login-form-button" block>
+              Log in
             </Button>
           </Form.Item>
         </Form>
