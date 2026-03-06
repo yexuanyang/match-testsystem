@@ -106,26 +106,6 @@ def create_users_batch(
     return {"created": created_count, "errors": errors}
 
 
-@router.put("/{user_id}/password")
-def reset_user_password(
-    user_id: int,
-    password_in: schemas.UserUpdatePassword,  # Reusing schema but logic differs
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(deps.get_current_admin_user),
-):
-    """
-    Admin reset user password.
-    """
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    user.hashed_password = security.get_password_hash(password_in.new_password)
-    db.add(user)
-    db.commit()
-    return {"message": "Password updated successfully"}
-
-
 @router.get("/me", response_model=schemas.UserOut)
 def read_user_me(
     current_user: models.User = Depends(deps.get_current_active_user),
@@ -156,6 +136,26 @@ def update_password(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.put("/{user_id}/password")
+def reset_user_password(
+    user_id: int,
+    password_in: schemas.UserUpdatePassword,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_admin_user),
+):
+    """
+    Admin reset user password.
+    """
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.hashed_password = security.get_password_hash(password_in.new_password)
+    db.add(user)
+    db.commit()
+    return {"message": "Password updated successfully"}
 
 
 @router.delete("/{user_id}", response_model=schemas.UserOut)
