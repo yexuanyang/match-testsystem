@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import subprocess
 import time
 from datetime import datetime
 
@@ -17,6 +18,29 @@ docker_client = docker.from_env()
 
 # Initialize Redis
 r = redis.from_url(settings.REDIS_URL)
+
+
+def _detect_gpu() -> bool:
+    """检测宿主机上是否有可用的 NVIDIA GPU。
+    优先检查 Docker 是否注册了 nvidia runtime，其次尝试调用 nvidia-smi。
+    """
+    try:
+        info = docker_client.info()
+        if "nvidia" in info.get("Runtimes", {}):
+            return True
+    except Exception:
+        pass
+    try:
+        result = subprocess.run(
+            ["nvidia-smi"], capture_output=True, timeout=5
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+GPU_AVAILABLE: bool = _detect_gpu()
+print(f"GPU support detected: {GPU_AVAILABLE}")
 
 
 def get_host_path(container_path: str):
@@ -89,25 +113,29 @@ def process_submission(db: Session, submission_id: int):
                 pass
 
         # Run Container
-        # GPU support: increase memory limit for GPU workloads
-        # Adjust mem_limit based on your needs (e.g., "4g" for GPU tasks, "512m" for CPU tasks)
+        # 根据宿主机是否有 GPU 动态决定资源配置
+        device_requests = (
+            [docker.types.DeviceRequest(count=-1, capabilities=[["gpu"]])]
+            if GPU_AVAILABLE
+            else []
+        )
+        mem_limit = "4g" if GPU_AVAILABLE else "2g"
+
         container = docker_client.containers.run(
             image=problem.docker_image,
             command=run_command,
             volumes=volumes,
             detach=True,
-            mem_limit="4g",  # 限制内存（GPU任务需要更多内存）
-            memswap_limit="4g",  # 禁用 swap
-            cpu_quota=100000,  # 限制 CPU (1.0 CPU, GPU任务可能需要更多CPU)
+            mem_limit=mem_limit,
+            memswap_limit=mem_limit,
+            cpu_quota=100000,
             cpu_period=100000,
-            network_disabled=False,  # GPU 驱动可能需要网络访问（可根据需要禁用）
-            read_only=False,  # 允许写入（测试需要）
-            cap_drop=["ALL"],  # 移除所有 capabilities
-            security_opt=["no-new-privileges"],  # 防止提权
-            pids_limit=200,  # 限制进程数（GPU程序可能需要更多进程）
-            device_requests=[
-                docker.types.DeviceRequest(count=-1, capabilities=[["gpu"]])
-            ],  # 启用 GPU 支持（所有GPU）
+            network_disabled=False,
+            read_only=False,
+            cap_drop=["ALL"],
+            security_opt=["no-new-privileges"],
+            pids_limit=200,
+            device_requests=device_requests,
             labels={"leaderboard_submission_id": str(submission_id)},
             environment={
                 "PROBLEM_ID": str(submission.problem_id),
