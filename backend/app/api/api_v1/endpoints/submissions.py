@@ -1,8 +1,8 @@
 import os
 import shutil
 import uuid
-from typing import Any, List, Optional
 from datetime import datetime, timedelta, timezone
+from typing import Any, List, Optional
 
 import docker
 import redis
@@ -13,7 +13,6 @@ from app.core.database import get_db
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 router = APIRouter()
 
@@ -27,6 +26,7 @@ MAX_SUBMISSIONS_PER_PROBLEM_PER_DAY = 20  # Maximum submissions per problem per 
 MAX_PENDING_SUBMISSIONS = 3  # Maximum pending submissions per user
 MIN_SUBMISSION_INTERVAL = 180  # Minimum submission interval (seconds), 3 minutes
 ALLOWED_EXTENSIONS = {".zip"}  # Allowed file extensions
+ALLOWED_REPORT_EXTENSIONS = {".pdf"}  # Allowed report file extensions
 
 
 @router.get("/", response_model=List[schemas.SubmissionOut])
@@ -203,6 +203,15 @@ def create_submission(
     # 10. Save report file (optional)
     report_path_str = None
     if report_file:
+        # Report file extension validation
+        report_ext = os.path.splitext(report_file.filename)[1].lower()
+        if report_ext not in ALLOWED_REPORT_EXTENSIONS:
+            shutil.rmtree(save_dir, ignore_errors=True)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Report file type not allowed. Allowed: {', '.join(ALLOWED_REPORT_EXTENSIONS)}",
+            )
+
         # Report file also needs size validation
         report_file.file.seek(0, 2)
         report_size = report_file.file.tell()

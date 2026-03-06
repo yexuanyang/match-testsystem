@@ -236,14 +236,14 @@ const ProblemDetail = () => {
 
             <Form.Item
               name="report"
-              label="Report (PDF/DOC) - Optional"
+              label="Report (PDF) - Optional"
               valuePropName="fileList"
               getValueFromEvent={normFile}
             >
               <Upload
                 beforeUpload={() => false}
                 maxCount={1}
-                accept=".pdf,.doc,.docx"
+                accept=".pdf"
               >
                 <Button icon={<FilePdfOutlined />}>Select Report</Button>
               </Upload>

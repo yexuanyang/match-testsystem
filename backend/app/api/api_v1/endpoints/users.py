@@ -6,8 +6,7 @@ from app import models, schemas
 from app.api import deps
 from app.core import security
 from app.core.database import get_db
-from fastapi import APIRouter, Body, Depends, File, HTTPException, UploadFile
-from fastapi.encoders import jsonable_encoder
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 router = APIRouter()
