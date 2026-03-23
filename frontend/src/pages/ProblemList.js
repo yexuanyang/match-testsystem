@@ -45,6 +45,12 @@ const ProblemList = () => {
       render: (text) => new Date(text).toLocaleString(),
     },
     {
+      title: 'Deadline',
+      dataIndex: 'deadline',
+      key: 'deadline',
+      render: (text) => (text ? new Date(text).toLocaleString() : 'Permanent'),
+    },
+    {
       title: 'Action',
       key: 'action',
       render: (_, record) => (

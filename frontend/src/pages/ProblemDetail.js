@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -30,6 +30,7 @@ import "katex/dist/katex.min.css";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import api from "../services/api";
+import { AuthContext } from "../context/AuthContext";
 
 import SubmissionHistory from "./SubmissionHistory";
 
@@ -38,6 +39,7 @@ const { Title, Paragraph } = Typography;
 const ProblemDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -53,7 +55,11 @@ const ProblemDetail = () => {
       const res = await api.get(`/problems/${id}`);
       setProblem(res.data);
     } catch (error) {
-      message.error("Failed to load problem");
+      if (error.response?.status === 404) {
+        message.error("Problem not found or no longer visible.");
+      } else {
+        message.error("Failed to load problem");
+      }
       navigate("/");
     } finally {
       setLoading(false);
@@ -61,6 +67,11 @@ const ProblemDetail = () => {
   };
 
   const onFinish = async (values) => {
+    if (!canSubmit) {
+      message.error("This problem is no longer open for submissions.");
+      return;
+    }
+
     setSubmitting(true);
     const formData = new FormData();
     formData.append("problem_id", id);
@@ -126,11 +137,17 @@ const ProblemDetail = () => {
   if (!problem) return <div>Loading...</div>;
 
   const attachments = getAttachments();
+  const deadline = problem.deadline ? new Date(problem.deadline) : null;
+  const isExpired = deadline ? new Date() >= deadline : false;
+  const canSubmit = !isExpired || user?.is_admin;
 
   return (
     <div>
       <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', marginBottom: '20px' }}>
         <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Problem ID: {problem.id}</div>
+        <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+          Deadline: {deadline ? deadline.toLocaleString() : "Permanent"}
+        </div>
         <Title level={2} style={{ margin: 0 }}>{problem.title}</Title>
       </div>
 
@@ -216,6 +233,11 @@ const ProblemDetail = () => {
         </Card>
 
         <Card title="Submit Solution">
+          {!canSubmit && (
+            <Paragraph type="danger">
+              This problem has passed its deadline and is no longer open for submissions.
+            </Paragraph>
+          )}
           <Form name="submission_form" onFinish={onFinish} layout="vertical">
             <Form.Item
               name="answer"
@@ -254,6 +276,7 @@ const ProblemDetail = () => {
                 type="primary"
                 htmlType="submit"
                 loading={submitting}
+                disabled={!canSubmit}
                 icon={<UploadOutlined />}
               >
                 Submit

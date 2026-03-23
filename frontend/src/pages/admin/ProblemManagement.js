@@ -13,6 +13,7 @@ import {
   List,
   Tag,
   Switch,
+  DatePicker,
 } from "antd";
 import {
   EditOutlined,
@@ -29,6 +30,7 @@ import markedKatex from "marked-katex-extension";
 import "katex/dist/katex.min.css";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
+import dayjs from "dayjs";
 import api from "../../services/api";
 
 const ProblemManagement = () => {
@@ -39,6 +41,7 @@ const ProblemManagement = () => {
   const [description, setDescription] = useState("");
   const [testMode, setTestMode] = useState("command");
   const [performanceEnabled, setPerformanceEnabled] = useState(false);
+  const [availabilityMode, setAvailabilityMode] = useState("permanent");
   const [fileList, setFileList] = useState([]);
   const [attachmentFileList, setAttachmentFileList] = useState([]);
   const [existingAttachments, setExistingAttachments] = useState([]);
@@ -87,6 +90,12 @@ const ProblemManagement = () => {
     formData.append("performance_enabled", performanceEnabled);
     if (performanceEnabled && values.performance_unit) {
       formData.append("performance_unit", values.performance_unit);
+    }
+
+    if (availabilityMode === "deadline" && values.deadline) {
+      formData.append("deadline", values.deadline.toISOString());
+    } else {
+      formData.append("deadline", "");
     }
 
     if (testMode === "command") {
@@ -152,8 +161,12 @@ const ProblemManagement = () => {
   const openEditModal = (problem) => {
     setEditingProblem(problem);
     setDescription(problem.description || "");
-    form.setFieldsValue(problem);
+    form.setFieldsValue({
+      ...problem,
+      deadline: problem.deadline ? dayjs(problem.deadline) : null,
+    });
     setPerformanceEnabled(problem.performance_enabled || false);
+    setAvailabilityMode(problem.deadline ? "deadline" : "permanent");
 
     if (problem.test_script_path) {
       setTestMode("script");
@@ -184,6 +197,7 @@ const ProblemManagement = () => {
     form.resetFields();
     setTestMode("command");
     setPerformanceEnabled(false);
+    setAvailabilityMode("permanent");
     setFileList([]);
     setAttachmentFileList([]);
     setExistingAttachments([]);
@@ -300,6 +314,12 @@ const ProblemManagement = () => {
     { title: "Title", dataIndex: "title", key: "title" },
     { title: "Docker Image", dataIndex: "docker_image", key: "docker_image" },
     {
+      title: "Deadline",
+      dataIndex: "deadline",
+      key: "deadline",
+      render: (text) => (text ? new Date(text).toLocaleString() : "Permanent"),
+    },
+    {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
@@ -410,6 +430,33 @@ const ProblemManagement = () => {
                   style={{ marginBottom: 0 }}
                 >
                   <Input placeholder="e.g., s, ms, kg, MB" style={{ width: '200px' }} />
+                </Form.Item>
+              )}
+            </Space>
+          </Form.Item>
+
+          <Form.Item label="Availability">
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <Radio.Group
+                value={availabilityMode}
+                onChange={(e) => setAvailabilityMode(e.target.value)}
+              >
+                <Radio value="permanent">Permanent</Radio>
+                <Radio value="deadline">Set Deadline</Radio>
+              </Radio.Group>
+
+              {availabilityMode === "deadline" && (
+                <Form.Item
+                  name="deadline"
+                  label="Deadline"
+                  rules={[{ required: true, message: "Please select deadline" }]}
+                  style={{ marginBottom: 0 }}
+                >
+                  <DatePicker
+                    showTime
+                    style={{ width: 280 }}
+                    placeholder="Select deadline"
+                  />
                 </Form.Item>
               )}
             </Space>

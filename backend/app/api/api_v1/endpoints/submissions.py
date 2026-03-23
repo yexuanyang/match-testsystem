@@ -92,6 +92,16 @@ def create_submission(
     if not problem:
         raise HTTPException(status_code=404, detail="Problem not found")
 
+    if not current_user.is_admin and problem.deadline:
+        deadline = problem.deadline
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=timezone.utc)
+        else:
+            deadline = deadline.astimezone(timezone.utc)
+
+        if datetime.now(timezone.utc) >= deadline:
+            raise HTTPException(status_code=404, detail="Problem not found")
+
     # 2. File size validation
     answer_file.file.seek(0, 2)  # Seek to end of file
     file_size = answer_file.file.tell()
