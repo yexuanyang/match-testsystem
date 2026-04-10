@@ -19,7 +19,7 @@ const { Option } = Select;
 
 const SubmissionHistory = ({
   problemId = null,
-  limit = 100,
+  limit = 10,
   showPagination = true,
 }) => {
   const { user } = useContext(AuthContext);
@@ -34,6 +34,8 @@ const SubmissionHistory = ({
   const [sortOrder, setSortOrder] = useState("desc");
   const [filterProblemId, setFilterProblemId] = useState(problemId);
   const [problems, setProblems] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Fetch problems list if we are in global view
   useEffect(() => {
@@ -56,6 +58,7 @@ const SubmissionHistory = ({
     try {
       const params = {
         limit,
+        skip: (currentPage - 1) * limit,
         all_users: viewAll,
         sort_order: sortOrder,
       };
@@ -63,10 +66,16 @@ const SubmissionHistory = ({
 
       const res = await api.get("/submissions/", { params });
       setSubmissions(res.data);
+      const total = Number.parseInt(res.headers["x-total-count"] || "0", 10);
+      setTotalCount(Number.isNaN(total) ? res.data.length : total);
     } catch (error) {
       console.error(error);
     }
-  }, [limit, viewAll, sortOrder, filterProblemId]);
+  }, [limit, currentPage, viewAll, sortOrder, filterProblemId]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [viewAll, sortOrder, filterProblemId]);
 
   useEffect(() => {
     setLoading(true);
@@ -261,7 +270,13 @@ const SubmissionHistory = ({
         dataSource={submissions}
         rowKey="id"
         loading={loading}
-        pagination={showPagination ? { pageSize: 10 } : false}
+        pagination={showPagination ? {
+          current: currentPage,
+          pageSize: limit,
+          total: totalCount,
+          onChange: (page) => setCurrentPage(page),
+          showSizeChanger: false,
+        } : false}
       />
 
       <Modal

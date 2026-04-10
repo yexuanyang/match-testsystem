@@ -8,16 +8,25 @@ const { Title } = Typography;
 const ProblemList = () => {
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 10;
 
   useEffect(() => {
     fetchProblems();
-  }, []);
+  }, [currentPage]);
 
   const fetchProblems = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/problems/');
+      const params = {
+        skip: (currentPage - 1) * pageSize,
+        limit: pageSize,
+      };
+      const res = await api.get('/problems/', { params });
       setProblems(res.data);
+      const total = Number.parseInt(res.headers['x-total-count'] || '0', 10);
+      setTotalCount(Number.isNaN(total) ? res.data.length : total);
     } catch (error) {
       console.error(error);
     } finally {
@@ -73,7 +82,13 @@ const ProblemList = () => {
         dataSource={problems}
         rowKey="id"
         loading={loading}
-        pagination={{ pageSize: 10 }}
+        pagination={{
+          current: currentPage,
+          pageSize,
+          total: totalCount,
+          onChange: (page) => setCurrentPage(page),
+          showSizeChanger: false,
+        }}
       />
     </div>
   );

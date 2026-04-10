@@ -8,17 +8,26 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 10;
   const [form] = Form.useForm();
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentPage]);
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/users/');
+      const params = {
+        skip: (currentPage - 1) * pageSize,
+        limit: pageSize,
+      };
+      const res = await api.get('/users/', { params });
       setUsers(res.data);
+      const total = Number.parseInt(res.headers['x-total-count'] || '0', 10);
+      setTotalCount(Number.isNaN(total) ? res.data.length : total);
     } catch (error) {
       message.error("Failed to fetch users");
     } finally {
@@ -113,7 +122,19 @@ const UserManagement = () => {
         </Upload>
       </Space>
 
-      <Table dataSource={users} columns={columns} rowKey="id" loading={loading} />
+      <Table
+        dataSource={users}
+        columns={columns}
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          current: currentPage,
+          pageSize,
+          total: totalCount,
+          onChange: (page) => setCurrentPage(page),
+          showSizeChanger: false,
+        }}
+      />
 
       <Modal
         title={editingUser ? `Reset Password for ${editingUser.username}` : "Create New User"}

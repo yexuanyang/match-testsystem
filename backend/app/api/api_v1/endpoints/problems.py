@@ -9,7 +9,7 @@ from app import models, schemas
 from app.api import deps
 from app.core.config import settings
 from app.core.database import get_db
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -51,6 +51,7 @@ def _is_problem_visible_to_user(problem: models.Problem, user: Optional[models.U
 
 @router.get("/", response_model=List[schemas.ProblemOut])
 def read_problems(
+    response: Response,
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
@@ -70,6 +71,8 @@ def read_problems(
             )
         )
 
+    total = query.count()
+    response.headers["X-Total-Count"] = str(total)
     problems = query.order_by(models.Problem.id).offset(skip).limit(limit).all()
     return problems
 
