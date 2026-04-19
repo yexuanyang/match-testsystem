@@ -6,7 +6,7 @@ from app import models, schemas
 from app.api import deps
 from app.core import security
 from app.core.database import get_db
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlalchemy.orm import Session
 
 router = APIRouter()
@@ -14,6 +14,7 @@ router = APIRouter()
 
 @router.get("/", response_model=List[schemas.UserOut])
 def read_users(
+    response: Response,
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
@@ -22,9 +23,10 @@ def read_users(
     """
     Retrieve users. Only for Admin.
     """
-    users = (
-        db.query(models.User).order_by(models.User.id).offset(skip).limit(limit).all()
-    )
+    query = db.query(models.User)
+    total = query.count()
+    response.headers["X-Total-Count"] = str(total)
+    users = query.order_by(models.User.id).offset(skip).limit(limit).all()
     return users
 
 
@@ -68,7 +70,12 @@ def create_users_batch(
     CSV Format: username,password
     """
     content = file.file.read().decode("utf-8")
-    csv_reader = csv.reader(io.StringIO(content))
+    try:
+        dialect = csv.Sniffer().sniff(content[:1024], delimiters=",\t")
+    except csv.Error:
+        # Fallback to comma-separated CSV when delimiter detection fails.
+        dialect = csv.excel
+    csv_reader = csv.reader(io.StringIO(content), dialect)
 
     created_count = 0
     errors = []

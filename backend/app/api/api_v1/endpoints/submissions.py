@@ -10,7 +10,7 @@ from app import models, schemas
 from app.api import deps
 from app.core.config import settings
 from app.core.database import get_db
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -31,6 +31,7 @@ ALLOWED_REPORT_EXTENSIONS = {".pdf"}  # Allowed report file extensions
 
 @router.get("/", response_model=List[schemas.SubmissionOut])
 def read_submissions(
+    response: Response,
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
@@ -71,6 +72,8 @@ def read_submissions(
     else:
         query = query.order_by(models.Submission.submitted_at.desc())
 
+    total = query.count()
+    response.headers["X-Total-Count"] = str(total)
     submissions = query.offset(skip).limit(limit).all()
     return submissions
 
@@ -91,6 +94,16 @@ def create_submission(
     problem = db.query(models.Problem).filter(models.Problem.id == problem_id).first()
     if not problem:
         raise HTTPException(status_code=404, detail="Problem not found")
+
+    if not current_user.is_admin and problem.deadline:
+        deadline = problem.deadline
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=timezone.utc)
+        else:
+            deadline = deadline.astimezone(timezone.utc)
+
+        if datetime.now(timezone.utc) >= deadline:
+            raise HTTPException(status_code=404, detail="Problem not found")
 
     # 2. File size validation
     answer_file.file.seek(0, 2)  # Seek to end of file

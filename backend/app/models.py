@@ -49,6 +49,9 @@ class Problem(Base):
     performance_unit = Column(
         String, nullable=True
     )  # Unit for performance metric (e.g., 's', 'kg', 'ms')
+    deadline = Column(
+        DateTime(timezone=True), nullable=True
+    )  # Problem deadline; NULL means permanently visible
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     submissions = relationship("Submission", back_populates="problem")

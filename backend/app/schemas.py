@@ -49,6 +49,7 @@ class ProblemBase(BaseModel):
     attachments: Optional[str] = None  # JSON string of attachment info
     performance_enabled: bool = False
     performance_unit: Optional[str] = None
+    deadline: Optional[datetime] = None
 
 
 class ProblemCreate(ProblemBase):

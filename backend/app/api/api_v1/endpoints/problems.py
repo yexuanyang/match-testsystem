@@ -1,6 +1,7 @@
 import os
 import shutil
 import json
+from datetime import datetime, timezone
 from typing import Any, List, Optional
 
 import docker
@@ -8,29 +9,71 @@ from app import models, schemas
 from app.api import deps
 from app.core.config import settings
 from app.core.database import get_db
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
 from fastapi.responses import FileResponse
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 router = APIRouter()
 
 
+def _normalize_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _parse_deadline(deadline: Optional[str]) -> Optional[datetime]:
+    if deadline is None:
+        return None
+
+    deadline_str = deadline.strip()
+    if not deadline_str:
+        return None
+
+    try:
+        parsed = datetime.fromisoformat(deadline_str.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid deadline format") from exc
+
+    return _normalize_utc(parsed)
+
+
+def _is_problem_visible_to_user(problem: models.Problem, user: Optional[models.User]) -> bool:
+    if user and user.is_admin:
+        return True
+
+    if problem.deadline is None:
+        return True
+
+    return _normalize_utc(problem.deadline) > datetime.now(timezone.utc)
+
+
 @router.get("/", response_model=List[schemas.ProblemOut])
 def read_problems(
+    response: Response,
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
+    current_user: Optional[models.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve problems.
     """
-    problems = (
-        db.query(models.Problem)
-        .order_by(models.Problem.id)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    query = db.query(models.Problem)
+
+    if not (current_user and current_user.is_admin):
+        now = datetime.now(timezone.utc)
+        query = query.filter(
+            or_(
+                models.Problem.deadline.is_(None),
+                models.Problem.deadline > now,
+            )
+        )
+
+    total = query.count()
+    response.headers["X-Total-Count"] = str(total)
+    problems = query.order_by(models.Problem.id).offset(skip).limit(limit).all()
     return problems
 
 
@@ -39,6 +82,7 @@ def read_problem(
     *,
     db: Session = Depends(get_db),
     problem_id: int,
+    current_user: Optional[models.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get problem by ID.
@@ -46,6 +90,10 @@ def read_problem(
     problem = db.query(models.Problem).filter(models.Problem.id == problem_id).first()
     if not problem:
         raise HTTPException(status_code=404, detail="Problem not found")
+
+    if not _is_problem_visible_to_user(problem, current_user):
+        raise HTTPException(status_code=404, detail="Problem not found")
+
     return problem
 
 
@@ -60,6 +108,7 @@ def create_problem(
     submission_map_path: Optional[str] = Form(None),
     performance_enabled: bool = Form(False),
     performance_unit: Optional[str] = Form(None),
+    deadline: Optional[str] = Form(None),
     test_script_file: Optional[UploadFile] = File(None),
     attachment_files: List[UploadFile] = File(None),
     current_user: models.User = Depends(deps.get_current_admin_user),
@@ -75,6 +124,7 @@ def create_problem(
         submission_map_path=submission_map_path,
         performance_enabled=performance_enabled,
         performance_unit=performance_unit,
+        deadline=_parse_deadline(deadline),
     )
     db.add(problem)
     db.commit()
@@ -134,6 +184,7 @@ def update_problem(
     submission_map_path: Optional[str] = Form(None),
     performance_enabled: bool = Form(False),
     performance_unit: Optional[str] = Form(None),
+    deadline: Optional[str] = Form(None),
     test_script_file: Optional[UploadFile] = File(None),
     attachment_files: List[UploadFile] = File(None),
     existing_attachments: Optional[str] = Form(None),
@@ -155,6 +206,7 @@ def update_problem(
     problem.submission_map_path = submission_map_path
     problem.performance_enabled = performance_enabled
     problem.performance_unit = performance_unit
+    problem.deadline = _parse_deadline(deadline)
 
     if clear_script:
         problem.test_script_path = None

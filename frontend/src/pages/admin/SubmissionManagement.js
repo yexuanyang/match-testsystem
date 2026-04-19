@@ -25,6 +25,9 @@ const { Option } = Select;
 const SubmissionManagement = () => {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 10;
 
   // Filters
   const [showAll, setShowAll] = useState(false);
@@ -43,8 +46,8 @@ const SubmissionManagement = () => {
       const params = {
         all_users: showAll,
         sort_order: sortOrder,
-        skip: 0,
-        limit: 100,
+        skip: (currentPage - 1) * pageSize,
+        limit: pageSize,
       };
 
       if (filterSubmissionId) {
@@ -56,10 +59,16 @@ const SubmissionManagement = () => {
 
       const res = await api.get("/submissions/", { params });
       setSubmissions(res.data);
+      const total = Number.parseInt(res.headers["x-total-count"] || "0", 10);
+      setTotalCount(Number.isNaN(total) ? res.data.length : total);
     } catch (error) {
       console.error(error);
       message.error("Failed to fetch submissions");
     }
+  }, [showAll, sortOrder, filterSubmissionId, filterProblemId, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
   }, [showAll, sortOrder, filterSubmissionId, filterProblemId]);
 
   useEffect(() => {
@@ -204,7 +213,13 @@ const SubmissionManagement = () => {
         columns={columns}
         rowKey="id"
         loading={loading}
-        pagination={{ pageSize: 10 }}
+        pagination={{
+          current: currentPage,
+          pageSize,
+          total: totalCount,
+          onChange: (page) => setCurrentPage(page),
+          showSizeChanger: false,
+        }}
       />
     </div>
   );
