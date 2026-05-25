@@ -7,9 +7,38 @@ from app.api import deps
 from app.core import security
 from app.core.database import get_db
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from fastapi.responses import StreamingResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 router = APIRouter()
+
+
+def _build_user_problem_scores_csv(
+    users: List[models.User],
+    problems: List[models.Problem],
+    best_score_map: dict,
+    best_performance_map: dict,
+) -> str:
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    headers = ["user_id", "username"]
+    for problem in problems:
+        headers.append(f"problem_{problem.id}_{problem.title}_score")
+        headers.append(f"problem_{problem.id}_{problem.title}_performance")
+    writer.writerow(headers)
+
+    for user in users:
+        row = [user.id, user.username]
+        for problem in problems:
+            score = best_score_map.get((user.id, problem.id))
+            performance = best_performance_map.get((user.id, problem.id))
+            row.append("" if score is None else score)
+            row.append("" if performance is None else performance)
+        writer.writerow(row)
+
+    return output.getvalue()
 
 
 @router.get("/", response_model=List[schemas.UserOut])
@@ -110,6 +139,67 @@ def create_users_batch(
 
     db.commit()
     return {"created": created_count, "errors": errors}
+
+
+@router.get("/export/problem-scores")
+def export_user_problem_scores_csv(
+    db: Session = Depends(get_db),
+    include_admin: bool = False,
+    current_user: models.User = Depends(deps.get_current_admin_user),
+):
+    """
+    Export per-user per-problem best score and best performance as CSV.
+    Only available to Admin.
+    """
+    user_query = db.query(models.User)
+    if not include_admin:
+        user_query = user_query.filter(models.User.is_admin == False)
+    users = user_query.order_by(models.User.id).all()
+
+    problems = db.query(models.Problem).order_by(models.Problem.id).all()
+
+    best_score_rows = (
+        db.query(
+            models.Submission.user_id,
+            models.Submission.problem_id,
+            func.max(models.Submission.score).label("best_score"),
+        )
+        .filter(models.Submission.score.isnot(None))
+        .group_by(models.Submission.user_id, models.Submission.problem_id)
+        .all()
+    )
+    best_score_map = {
+        (row.user_id, row.problem_id): row.best_score for row in best_score_rows
+    }
+
+    best_performance_rows = (
+        db.query(
+            models.Submission.user_id,
+            models.Submission.problem_id,
+            func.max(models.Submission.performance).label("best_performance"),
+        )
+        .filter(models.Submission.performance.isnot(None))
+        .group_by(models.Submission.user_id, models.Submission.problem_id)
+        .all()
+    )
+    best_performance_map = {
+        (row.user_id, row.problem_id): row.best_performance
+        for row in best_performance_rows
+    }
+
+    csv_content = _build_user_problem_scores_csv(
+        users,
+        problems,
+        best_score_map,
+        best_performance_map,
+    )
+
+    filename = "user_problem_scores.csv"
+    return StreamingResponse(
+        iter([csv_content.encode("utf-8-sig")]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/me", response_model=schemas.UserOut)

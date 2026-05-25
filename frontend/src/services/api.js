@@ -66,4 +66,30 @@ export const changePassword = async (oldPassword, newPassword) => {
   return response.data;
 };
 
+export const downloadUserProblemScores = async (includeAdmin = false) => {
+  const response = await api.get('/users/export/problem-scores', {
+    params: { include_admin: includeAdmin },
+    responseType: 'blob',
+  });
+
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+
+  const contentDisposition = response.headers['content-disposition'];
+  let filename = 'user_problem_scores.csv';
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename="?([^\";]+)"?/);
+    if (filenameMatch && filenameMatch.length === 2) {
+      filename = filenameMatch[1];
+    }
+  }
+
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
 export default api;

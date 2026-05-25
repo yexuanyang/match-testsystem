@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Upload, message, Space, Popconfirm } from 'antd';
+import { Table, Button, Modal, Form, Input, Upload, message, Space, Popconfirm, Switch } from 'antd';
 import { UploadOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
-import api from '../../services/api';
+import api, { downloadUserProblemScores } from '../../services/api';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [includeAdminScores, setIncludeAdminScores] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -95,6 +97,18 @@ const UserManagement = () => {
     setIsModalOpen(true);
   };
 
+  const handleExportScores = async () => {
+    setExporting(true);
+    try {
+      await downloadUserProblemScores(includeAdminScores);
+      message.success('Scores exported');
+    } catch (error) {
+      message.error(error.response?.data?.detail || 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const columns = [
     { title: 'ID', dataIndex: 'id', key: 'id' },
     { title: 'Username', dataIndex: 'username', key: 'username' },
@@ -120,6 +134,11 @@ const UserManagement = () => {
         <Upload beforeUpload={handleBatchUpload} showUploadList={false} accept=".csv">
           <Button icon={<UploadOutlined />}>Batch Import (CSV)</Button>
         </Upload>
+        <Space>
+          <span>Include Admin</span>
+          <Switch checked={includeAdminScores} onChange={setIncludeAdminScores} />
+        </Space>
+        <Button loading={exporting} onClick={handleExportScores}>Export Scores (CSV)</Button>
       </Space>
 
       <Table
