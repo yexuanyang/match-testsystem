@@ -10,6 +10,7 @@ import redis
 from app import models
 from app.core.config import settings
 from app.core.database import SessionLocal
+from app.submission_mapping import resolve_submission_bind_target
 from sqlalchemy.orm import Session
 
 # Initialize Docker Client
@@ -18,7 +19,6 @@ docker_client = docker.from_env()
 
 # Initialize Redis
 r = redis.from_url(settings.REDIS_URL)
-
 
 def _detect_gpu() -> bool:
     """检测宿主机上是否有可用的 NVIDIA GPU。
@@ -88,10 +88,8 @@ def process_submission(db: Session, submission_id: int):
         print(f"Running container for image: {problem.docker_image}")
 
         # Determine submission map path
-        submission_map_target = (
-            problem.submission_map_path
-            if problem.submission_map_path
-            else "/input/submission.zip"
+        submission_map_target = resolve_submission_bind_target(
+            problem.submission_map_path, os.path.basename(host_answer_path)
         )
         print(f"Mounting {host_answer_path} to {submission_map_target}")
 

@@ -1,8 +1,8 @@
 import os
 import shutil
 import uuid
-from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional
+from datetime import datetime, timedelta, timezone
 
 import docker
 import redis
@@ -25,8 +25,18 @@ MAX_SUBMISSIONS_PER_HOUR = 10  # Maximum submissions per hour
 MAX_SUBMISSIONS_PER_PROBLEM_PER_DAY = 20  # Maximum submissions per problem per day
 MAX_PENDING_SUBMISSIONS = 3  # Maximum pending submissions per user
 MIN_SUBMISSION_INTERVAL = 180  # Minimum submission interval (seconds), 3 minutes
-ALLOWED_EXTENSIONS = {".zip"}  # Allowed file extensions
-ALLOWED_REPORT_EXTENSIONS = {".pdf"}  # Allowed report file extensions
+ALLOWED_EXTENSIONS = {
+    ".zip",
+    ".tar",
+    ".gz",
+    ".tar.gz",
+    ".csv",
+    ".txt",
+    ".json",
+    ".py",
+    ".patch",
+    ".diff",
+}  # Allowed file extensions
 
 
 @router.get("/", response_model=List[schemas.SubmissionOut])
@@ -124,7 +134,7 @@ def create_submission(
     if file_ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"File type not allowed. Allowed: {', '.join(ALLOWED_EXTENSIONS)}",
+            detail=f"File type not allowed. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
         )
 
     # 4. Check minimum submission interval (3 minutes) - Skip for admins
@@ -208,23 +218,13 @@ def create_submission(
     os.makedirs(save_dir, exist_ok=True)
 
     # 9. Save answer file
-    answer_filename = f"answer_{answer_file.filename}"
-    answer_path = os.path.join(save_dir, answer_filename)
+    answer_path = os.path.join(save_dir, os.path.basename(answer_file.filename))
     with open(answer_path, "wb") as buffer:
         shutil.copyfileobj(answer_file.file, buffer)
 
     # 10. Save report file (optional)
     report_path_str = None
     if report_file:
-        # Report file extension validation
-        report_ext = os.path.splitext(report_file.filename)[1].lower()
-        if report_ext not in ALLOWED_REPORT_EXTENSIONS:
-            shutil.rmtree(save_dir, ignore_errors=True)
-            raise HTTPException(
-                status_code=400,
-                detail=f"Report file type not allowed. Allowed: {', '.join(ALLOWED_REPORT_EXTENSIONS)}",
-            )
-
         # Report file also needs size validation
         report_file.file.seek(0, 2)
         report_size = report_file.file.tell()

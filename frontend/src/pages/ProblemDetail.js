@@ -14,7 +14,7 @@ import {
 } from "antd";
 import {
   UploadOutlined,
-  FileZipOutlined,
+  FileOutlined,
   FilePdfOutlined,
   DownloadOutlined,
   PaperClipOutlined,
@@ -241,18 +241,22 @@ const ProblemDetail = () => {
           <Form name="submission_form" onFinish={onFinish} layout="vertical">
             <Form.Item
               name="answer"
-              label="Answer File (ZIP)"
+              label="Answer File"
               valuePropName="fileList"
               getValueFromEvent={normFile}
               rules={[
                 {
                   required: true,
-                  message: "Please upload your answer zip file",
+                  message: "Please upload your answer file",
                 },
               ]}
             >
-              <Upload beforeUpload={() => false} maxCount={1} accept=".zip">
-                <Button icon={<FileZipOutlined />}>Select ZIP File</Button>
+              <Upload
+                beforeUpload={() => false}
+                maxCount={1}
+                accept=".zip,.tar,.gz,.tar.gz,.csv,.txt,.json,.py,.patch,.diff"
+              >
+                <Button icon={<FileOutlined />}>Select File</Button>
               </Upload>
             </Form.Item>
 
